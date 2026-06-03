@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>myass — Assistente Pessoal Local</title>
+<style>
+  body { font-family: 'Liberation Sans', Arial, sans-serif; color: #1a1a1a; line-height: 1.5; font-size: 11pt; margin: 2cm; }
+  h1 { color: #1f3a5f; font-size: 26pt; margin-bottom: 4px; }
+  h2 { color: #1f3a5f; font-size: 16pt; border-bottom: 2px solid #cdd9e8; padding-bottom: 3px; margin-top: 26px; }
+  h3 { color: #2a5d8a; font-size: 12.5pt; margin-top: 18px; margin-bottom: 4px; }
+  .subtitle { color: #555; font-size: 13pt; margin-top: 0; }
+  .lead { font-size: 12pt; background: #f1f5fb; border-left: 4px solid #2a5d8a; padding: 10px 14px; }
+  pre { font-family: 'Liberation Mono','Courier New',monospace; font-size: 8.5pt; background: #f6f7f9; border: 1px solid #e0e3e8; padding: 10px; line-height: 1.25; }
+  .pill { display: inline-block; background: #2a5d8a; color: #fff; font-size: 9pt; padding: 1px 8px; border-radius: 9px; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 8px 0; }
+  th, td { border: 1px solid #cfd6df; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef2f7; }
+  .muted { color: #666; }
+  .analogy { background: #fcf7ec; border-left: 4px solid #d8a13a; padding: 8px 12px; font-size: 10.5pt; }
+  .footer { margin-top: 28px; border-top: 1px solid #ddd; padding-top: 8px; color: #888; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<h1>myass</h1>
+<p class="subtitle">Assistente Pessoal Local — uma plataforma que organiza tarefas e Inteligência Artificial rodando <strong>só na sua casa</strong>, sem nuvem.</p>
+
+<p class="lead">Em uma frase: é um assistente pessoal que <strong>mora dentro da sua infraestrutura</strong>, faz o trabalho pesado com vários robôs e modelos de IA, e foi desenhado desde o início para ser <strong>privado e difícil de invadir</strong> — nada da sua vida sai para a internet.</p>
+
+<h2>O problema</h2>
+<p>A vida moderna é caótica e cheia de tarefas. Dá para pedir ajuda à tecnologia — mas os assistentes comuns (tipo Alexa ou Siri) mandam tudo que você fala para a nuvem de uma empresa. Você passa a confiar sua rotina, suas senhas e seus hábitos a terceiros. O <strong>myass</strong> nasce da ideia oposta: <em>ser ajudado sem entregar a própria vida</em>.</p>
+
+<h2>A ideia</h2>
+<p>Em vez de uma única IA gigante que sabe tudo, o myass <strong>orquestra</strong> várias rotinas e várias IAs especializadas — cada uma boa em uma coisa — coordenando todas para resolver um problema. Tudo isso roda em equipamentos seus, numa rede fechada. Pense num <strong>maestro</strong> regendo vários músicos: o maestro não toca tudo, ele coordena quem toca o quê e quando.</p>
+
+<h2>Visão geral da arquitetura</h2>
+<p>O sistema tem duas partes: um <strong>Núcleo</strong> (o cérebro/maestro, protegido no centro) e vários <strong>Blocos</strong> (os trabalhadores, que você pode multiplicar).</p>
+
+<p><img src="diagrama-arquitetura.png" alt="Arquitetura do myass" width="500" height="347"></p>
+
+<p class="analogy"><strong>Analogia:</strong> o Núcleo é o escritório central; os Blocos são funcionários. Precisa de mais força? Você contrata mais Blocos. Um funcionário faltou? Os outros continuam — o trabalho não para.</p>
+
+<h2>As peças, explicadas</h2>
+
+<h3>O Núcleo (o cérebro)</h3>
+<p>Fica no centro protegido e contém o gerente e a memória do sistema:</p>
+<table>
+<tr><th>Peça</th><th>O que faz, em linguagem humana</th></tr>
+<tr><td><strong>Escalonador</strong></td><td>O gerente. Recebe as tarefas e decide qual funcionário faz o quê, conforme a força de cada um.</td></tr>
+<tr><td><strong>Broker (fila de tarefas)</strong></td><td>O quadro de tarefas. Guarda o que precisa ser feito, organizado por "peso" da tarefa.</td></tr>
+<tr><td><strong>Banco de dados</strong></td><td>A memória. Guarda as tarefas pendentes e o registro do que foi feito.</td></tr>
+<tr><td><strong>GET / SET</strong></td><td>O porteiro que só sai para buscar recados lá fora e levar respostas — nunca deixa ninguém entrar.</td></tr>
+</table>
+
+<h3>Os Blocos (os trabalhadores)</h3>
+<p>Cada Bloco é uma máquina que faz o trabalho de verdade. Dentro dele há um <strong>Executor</strong> (o funcionário) e vários <strong>robôs/BOTs</strong> (as ferramentas e programas dele). Você pode ter quantos Blocos quiser — é assim que o sistema cresce e fica resistente a falhas.</p>
+
+<h3>O Workflow (a receita)</h3>
+<p>Você monta o que o assistente deve fazer num editor visual, como uma <strong>receita de bolo</strong>: passo 1, passo 2, "se isso então aquilo", "repita para cada item da lista". Cada passo aponta para um robô que executa aquela parte.</p>
+
+<p><img src="diagrama-fluxo.png" alt="Workflow e execução do myass" width="500" height="250"></p>
+
+<h2>Como um trabalho acontece (passo a passo)</h2>
+<table>
+<tr><th>#</th><th>O que acontece</th></tr>
+<tr><td>1</td><td>Um pedido chega na "caixa de recados" pública (na internet).</td></tr>
+<tr><td>2</td><td>O porteiro <strong>GET</strong> sai, busca o pedido, descriptografa e coloca na fila.</td></tr>
+<tr><td>3</td><td>O <strong>Escalonador</strong> escolhe um Bloco com força suficiente para a tarefa.</td></tr>
+<tr><td>4</td><td>O <strong>Executor</strong> do Bloco baixa o robô certo, confere que é autêntico e o executa.</td></tr>
+<tr><td>5</td><td>O resultado volta; o gerente avança para o próximo passo da receita.</td></tr>
+<tr><td>6</td><td>No fim, o porteiro <strong>SET</strong> leva a resposta de volta para fora.</td></tr>
+</table>
+
+<h2>Por que é difícil de invadir</h2>
+
+<h3>A casa não tem campainha do lado de fora <span class="pill">inside-out</span></h3>
+<p>Ninguém da internet consegue "bater na porta": o sistema <strong>nunca aceita conexões de fora para dentro</strong>. É sempre a casa que sai para buscar os recados. Sem porta de entrada, não há porta para arrombar.</p>
+
+<h3>Tudo em código secreto, com a chave entregue em mãos</h3>
+<p>Todas as conversas internas são cifradas com criptografia forte e moderna (a mesma família usada por Signal, WireGuard e Tor). E a <strong>chave</strong> desse código é entregue <strong>fisicamente</strong> (pen drive / QR), <strong>nunca pela internet</strong> — então não há como interceptá-la no caminho.</p>
+
+<h3>Cada peça prova quem é</h3>
+<p>Robôs e máquinas são identificados por uma "impressão digital" matemática do seu conteúdo. Se alguém troca o código de um robô, a impressão digital muda e a fraude é detectada antes de rodar.</p>
+
+<h3>Nada vai para a nuvem</h3>
+<p>Diferente de Alexa e Siri, <strong>nenhum dado pessoal sai de casa</strong>. O assistente trabalha para você, na sua infraestrutura, sob seu controle.</p>
+
+<h2>Em resumo</h2>
+<p class="lead">O <strong>myass</strong> é um assistente pessoal que organiza tarefas e IAs <strong>na sua própria casa</strong>: cresce conforme você adiciona trabalhadores, continua funcionando se um falha, e foi desenhado, do começo ao fim, para que <strong>a sua vida continue sendo só sua</strong>.</p>
+
+<p class="footer">myass — Assistente Pessoal Local · documento de apresentação · gerado para fins de explicação geral.</p>
+
+</body>
+</html>

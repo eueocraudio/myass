@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="500" viewBox="0 0 720 500" font-family="Liberation Sans, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="#2a5d8a"/>
+    </marker>
+    <marker id="arr2" markerWidth="9" markerHeight="9" refX="2" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M7,0 L0,3 L7,6 z" fill="#2a5d8a"/>
+    </marker>
+  </defs>
+
+  <!-- public store -->
+  <rect x="210" y="10" width="300" height="46" rx="6" fill="#f2f2f2" stroke="#888"/>
+  <text x="360" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Caixa de recados pública</text>
+  <text x="360" y="47" text-anchor="middle" font-size="11" fill="#666">(na Internet)</text>
+
+  <!-- divider -->
+  <line x1="20" y1="74" x2="700" y2="74" stroke="#c9a23a" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="24" y="69" font-size="11" fill="#a07d1f">▲ Internet</text>
+  <text x="24" y="92" font-size="11" font-weight="bold" fill="#a07d1f">▼ Sua casa — rede fechada</text>
+
+  <!-- inside-out arrow -->
+  <line x1="360" y1="56" x2="360" y2="112" stroke="#2a5d8a" stroke-width="2" marker-start="url(#arr2)" marker-end="url(#arr)"/>
+  <text x="372" y="100" font-size="10.5" fill="#2a5d8a">inside-out: só a casa sai e busca</text>
+
+  <!-- nucleo container -->
+  <rect x="30" y="112" width="660" height="198" rx="10" fill="#f6f9fc" stroke="#1f3a5f" stroke-width="1.5"/>
+  <text x="46" y="132" font-size="13" font-weight="bold" fill="#1f3a5f">NÚCLEO — o cérebro</text>
+
+  <!-- GET -->
+  <rect x="60" y="150" width="150" height="48" rx="6" fill="#eef2f7" stroke="#2a5d8a"/>
+  <text x="135" y="172" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a">GET</text>
+  <text x="135" y="188" text-anchor="middle" font-size="10.5" fill="#444">busca recados</text>
+  <!-- SET -->
+  <rect x="60" y="216" width="150" height="48" rx="6" fill="#eef2f7" stroke="#2a5d8a"/>
+  <text x="135" y="238" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a">SET</text>
+  <text x="135" y="254" text-anchor="middle" font-size="10.5" fill="#444">devolve respostas</text>
+  <!-- broker -->
+  <rect x="245" y="150" width="200" height="48" rx="6" fill="#eef2f7" stroke="#2a5d8a"/>
+  <text x="345" y="172" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a">Broker</text>
+  <text x="345" y="188" text-anchor="middle" font-size="10.5" fill="#444">fila de tarefas</text>
+  <!-- banco -->
+  <rect x="245" y="216" width="200" height="48" rx="6" fill="#eef2f7" stroke="#2a5d8a"/>
+  <text x="345" y="238" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a">Banco de dados</text>
+  <text x="345" y="254" text-anchor="middle" font-size="10.5" fill="#444">memória</text>
+  <!-- escalonador -->
+  <rect x="480" y="150" width="180" height="114" rx="6" fill="#dfe9f4" stroke="#1f3a5f" stroke-width="1.5"/>
+  <text x="570" y="200" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1a1a1a">Escalonador</text>
+  <text x="570" y="218" text-anchor="middle" font-size="10.5" fill="#444">o gerente</text>
+
+  <!-- arrows nucleo -> blocos -->
+  <line x1="155" y1="310" x2="155" y2="356" stroke="#2a5d8a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="360" y1="310" x2="360" y2="356" stroke="#2a5d8a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="565" y1="310" x2="565" y2="356" stroke="#2a5d8a" stroke-width="1.6" marker-end="url(#arr)"/>
+  <rect x="285" y="322" width="150" height="20" rx="4" fill="#ffffff" stroke="#cdd9e8"/>
+  <text x="360" y="336" text-anchor="middle" font-size="10" fill="#2a5d8a">conexão cifrada (Noise)</text>
+
+  <!-- blocos -->
+  <g>
+    <rect x="70" y="358" width="170" height="104" rx="8" fill="#fcf7ec" stroke="#d8a13a" stroke-width="1.4"/>
+    <text x="155" y="392" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#8a6516">BLOCO 1</text>
+    <text x="155" y="414" text-anchor="middle" font-size="11" fill="#5a4a1f">Executor (funcionário)</text>
+    <text x="155" y="432" text-anchor="middle" font-size="11" fill="#5a4a1f">+ robôs / BOTs</text>
+  </g>
+  <g>
+    <rect x="275" y="358" width="170" height="104" rx="8" fill="#fcf7ec" stroke="#d8a13a" stroke-width="1.4"/>
+    <text x="360" y="392" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#8a6516">BLOCO 2</text>
+    <text x="360" y="414" text-anchor="middle" font-size="11" fill="#5a4a1f">Executor (funcionário)</text>
+    <text x="360" y="432" text-anchor="middle" font-size="11" fill="#5a4a1f">+ robôs / BOTs</text>
+  </g>
+  <g>
+    <rect x="480" y="358" width="170" height="104" rx="8" fill="#fcf7ec" stroke="#d8a13a" stroke-width="1.4"/>
+    <text x="565" y="392" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#8a6516">BLOCO N</text>
+    <text x="565" y="414" text-anchor="middle" font-size="11" fill="#5a4a1f">Executor (funcionário)</text>
+    <text x="565" y="432" text-anchor="middle" font-size="11" fill="#5a4a1f">+ robôs / BOTs</text>
+  </g>
+  <text x="360" y="484" text-anchor="middle" font-size="10.5" fill="#666">Adicione mais Blocos para crescer · se um falha, os outros continuam</text>
+</svg>
