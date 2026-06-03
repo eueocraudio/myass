@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-implementation. The repository currently holds only `README.md`, this file, and the founding design document under `doc/`. There is **no source code, build tooling, or chosen build commands yet** — those sections will be filled in as the project is scaffolded. This document is the authoritative architecture spec; it is self-contained and does not depend on the founding PDF.
+Pre-implementation. The repository currently holds only `README.md`, this file, and the design artifacts under `doc/`. There is **no source code, build tooling, or chosen build commands yet** — those sections will be filled in as the project is scaffolded. This document is the authoritative architecture spec; it is self-contained and does not depend on the founding PDF.
+
+### Reference artifacts in `doc/`
+
+- `doc/diagrama-arquitetura.svg` / `.png` — rendered architecture (the topology below is the ASCII version).
+- `doc/diagrama-fluxo.svg` / `.png` — execution/flow diagram.
+- `doc/myass-apresentacao.pdf` / `.html` — friend-facing presentation of the project.
+- `doc/analise-tanenbaum.md`, `doc/analise-monero.md`, `doc/redesign-minimum-knowledge-core.md` — theory cross-analyses and the proposed redesign (see *Theoretical analysis* below).
 
 ## What the project is
 
@@ -36,14 +43,62 @@ Firm constraints — any design or implementation must satisfy all three:
 - **No HSM.** Hardware Security Module designs are not implemented.
 - **No security/CVE case study.** Out of scope.
 
+## Filosofia Borg: a Rainha escondida
+
+The project's organizing metaphor is the Borg collective. The collective **does** have a Queen — but she is **hidden, never reachable from the outside.** (This refines the earlier "coletivo sem Rainha" slogan: there *is* a Queen; there is simply no Queen the adversary can **find or reach**.) Adopted as the guiding philosophy.
+
+**Tese:** *the adversary's prize is a Queen he can find and coerce.* The collective survives a nation-state by ensuring the central mind is never locatable or reachable from the WAN: her only face to the world is a **blind mouthpiece (Locutus)**, she herself lives **hidden** behind the Tor subspace channel, and she is **distributed** so she is no single point of failure. She is allowed to *know* — she is not allowed to be *reached*.
+
+### Vocabulary (Borg ↔ arquitetura)
+
+- **drone = block** (Executor + BOTs) — the replaceable, specialized unit of the collective; the unit of distribution.
+- **designação (designation) = `block_name` = `BLAKE2(static pubkey)`** — the drone's cryptographic identity (see *Identity & traceability*).
+- **assimilação (assimilation) = the provisioning payload** that stands up a brand-new drone (see below).
+- **regeneração (regeneration) = broker lease/redelivery** — a drone dies, its work returns to the queue and is redelivered (the *infra* failure layer).
+- **adaptação (adaptation) = catch chains + redelivery** — the collective absorbs failure and keeps running.
+- **canal sub-espacial (subspace channel) = the Executor↔Scheduler link, carried over Tor** — the location-hidden link between drones and the core (see *Secure channels*).
+- **Rainha (Queen) = Broker + Scheduler** — the central orchestrating mind: reads the client's request and drives the drones. Hidden, not blind (see below).
+- **Locutus = the public store** — the Queen's *blind mouthpiece*: the conversation-bridge on the WAN between a human-language client and the hidden Queen. Holds only opaque ciphertext. (The "Locutus invertido": the canon Locutus knew the collective's mind and so doomed it — ours knows nothing, so capturing it yields a bucket of opaque bytes.)
+
+### A Rainha — escondida, não cega (postura adotada)
+
+**Owner decision:** the collective has a Queen — **the Rainha = Broker + Scheduler** — the central mind that reads the client's request and orchestrates the drones. She is **not** a blind router: you cannot orchestrate what you cannot read, and turning a human-language request into activities/`bot_ref`s is inherently a knowing act. (Deliberate divergence from the redesign's blind-router idea — see *Theoretical analysis*.)
+
+Because she *knows*, she is protected by **three walls** instead of by blindness:
+
+1. **Masked** — her only face to the WAN is **Locutus** (the public store), which is *blind*. Capture the mouthpiece → opaque blobs, not the mind. `GET`/`SET` decrypt only **inside** the hidden core, never at Locutus.
+2. **Hidden** — she lives behind the Tor subspace channel (location-hidden onion); there is no IP/port to scan or raid. You cannot raid a Queen you cannot locate.
+3. **Distributed** — replicated/stateless-over-MongoDB so she is no single point of *failure* (the Tanenbaum SPOF), even though she remains a single point of *knowledge*.
+
+**Residual risk, stated honestly:** a Queen who is *located and coerced* is the jackpot (content + audit + inventory). This posture leans hard on Tor + Locutus' blindness; it is the chosen trade-off (centralized natural-language orchestration is worth it), not an oversight.
+
+- **Rainha-parteira efêmera — the provisioning station** (mints drone identities; see assimilation). **Tolerated** because it is momentary, not sovereign: air-gapped, single-use per drone, retains no keys after minting, never online. A midwife of an instant is not a ruler.
+
+*Open:* whether the human-language interpreter (request → plan, itself an AI routine) runs **inside the Queen** or is dispatched to a **VAI drone** — pending. Physical backing of Locutus (object storage / IPFS / rotating mirrors) — pending.
+
+### Assimilação (provisioning a drone) — adopted model
+
+**Owner decision: the keypair is minted at provisioning and embedded in the payload (one-shot assimilation).** Running the payload turns a fresh machine into a drone that can immediately dial out and complete the Noise `KK` handshake — because its pubkey was already registered in the Inventory at minting time. (This is the convenience path, chosen deliberately over the more-secure "key born on the drone" path, so it ships **with** the hardening rules below.)
+
+What the payload does on the target: check the hardware *exigência*; install the Executor runtime + pinned deps **verifying hashes** (reproducible build — otherwise you assimilate a poisoned drone); install the embedded X25519 static private key + the Scheduler static pubkey + the `KKpsk0` PSK; compute its **designação** `BLAKE2(pubkey)`; configure dial-out (no listening port — honours *no inbound*).
+
+Because the payload **carries a secret** (static private key + PSK) it is sensitive material; these rules hold together:
+
+1. **One key per drone, never reused** — each payload is unique; designation is unique.
+2. **Provisioning station offline / air-gapped, under LUKS** — the only organ that briefly knows private keys (the ephemeral midwife-Queen).
+3. **Payload is single-use and short-lived** — minimal window if intercepted.
+4. **On the target:** move the private key to LUKS / `chmod 600`; **destroy/zero the payload media** after install.
+
+**Vector follows by force:** since the payload carries a private key, it travels **out-of-band on physical media (USB)** — never on the public store in clear.
+
 ## Topology
 
 Two zones:
 
-- **Trusted core:** the `GET`/`SET` edge, the custom Python **broker**, internal **storage (MongoDB)**, and the **Scheduler (Escalonador)**. Internal links inside the core use their own secure channel (see *Internal core links*).
-- **Distributable block = Executor + its BOTs/routines:** self-contained, runs on its own machine outside the core, **accepts no inbound**. **Blocks are the unit of distribution** — replicate blocks to scale and to tolerate failure (lose one block, the others continue). Each block's Executor **dials out** to the Scheduler.
+- **Trusted core:** the `GET`/`SET` edge, the custom Python **broker**, internal **storage (MongoDB)**, and the **Scheduler (Escalonador)**. The **broker + Scheduler together are the Rainha** — the hidden orchestrating mind (see *Filosofia Borg*). Internal links inside the core use their own secure channel (see *Internal core links*).
+- **Distributable block (= drone) = Executor + its BOTs/routines:** self-contained, runs on its own machine outside the core, **accepts no inbound**. **Blocks are the unit of distribution** — replicate blocks to scale and to tolerate failure (lose one block, the others continue). Each block's Executor **dials out** to the Scheduler.
 
-Inside-out edge: **`GET`** polls a public store (on the WAN) for requests, decrypts, and enqueues them; **`SET`** pushes results back out. The infrastructure never listens for inbound connections.
+Inside-out edge: **`GET`** polls **Locutus** (the public store on the WAN) for requests and enqueues them — decrypting only **inside the hidden core** (Locutus stays *blind*); **`SET`** pushes results back out to Locutus. The infrastructure never listens for inbound connections.
 
 ```
    WAN            │              TRUSTED CORE
@@ -68,7 +123,7 @@ Inside-out edge: **`GET`** polls a public store (on the WAN) for requests, decry
 
 Everything is named by content/identity hashes (all **BLAKE2**, non-NIST), giving tamper-evident traceability.
 
-- **Block name = `BLAKE2(block's Noise static public key)`.** The name *is* the block's cryptographic identity, authenticated by the Noise `KK` handshake — a forged block name fails the handshake, so a self-reported name is never trusted.
+- **Block name (the drone's *designação*) = `BLAKE2(block's Noise static public key)`.** The name *is* the block's cryptographic identity, authenticated by the Noise `KK` handshake — a forged block name fails the handshake, so a self-reported name is never trusted.
 - **A BOT is a project (many files) containing multiple scripts.** What an activity runs is identified by a **dual signature `bot_ref` = `{ project_hash, script_hash }`**:
   - **assinatura do projeto** = `project_hash = BLAKE2(whole project)` — the download/dedup unit.
   - **assinatura do script** = `script_hash = BLAKE2(the internal script)` — the entry point the activity runs.
@@ -100,7 +155,7 @@ A routine is an **activity tree** (a Nassi-Shneiderman workflow) with node types
 - **loop (foreach + fan-out):** foreach over an **array**; the body is a **fixed inner Nassi diagram**, and each iteration is a **copy of that same diagram** fed the item's data (each array item = different input). Copies run **async in parallel** (sync within each). Each child copy carries its **`parent_id`** (the loop) → execution tree; the parent **waits while any child is still running**; the **join** returns an **array of returns** (one per iteration) as the loop's output. `parent_id`/join is general to any fan-out.
 - **Error handling — nested `catch` following the structure.** Every scope (decision, block, loop, workflow) may register a `catch`. An error **bubbles innermost-first outward** through each enclosing scope until one handles it (else the occurrence fails → audit). Within a scope, handlers are ordered most-specific-at-top; **topmost match wins**; each handler is a script. When a catch handles a child's failure, its return is substituted into the join's array for that item.
 - **Per-error disposition (author's choice, 3 options):** **handle with a script** / **propagate up (subir)** / **ignore (swallow)**. The **default is propagate up** (errors surface and bubble — safest). **Ignore is explicit opt-in** (silently swallowing an error is dangerous and must be deliberate).
-- **Two failure layers — do not conflate:** *infra* failures (executor died, timeout) → handled by broker **lease/redelivery** (resilience); *logical* failures (script errored / unmapped label) → handled by the **catch** chains.
+- **Two failure layers — do not conflate:** *infra* failures (executor died, timeout) → handled by broker **lease/redelivery** (resilience = *regeneração*); *logical* failures (script errored / unmapped label) → handled by the **catch** chains.
 
 ## Workflow editor (authoring tool)
 
@@ -114,7 +169,7 @@ All channels use a **custom protocol over a raw TCP stream socket** (`SOCK_STREA
 
 ### External channel — Executor ↔ Scheduler (the exposed link)
 
-This is the **single exposed/"vulnerable" link** (Executor in a block, on a different machine, dialing the Scheduler in the core).
+This is the **single exposed/"vulnerable" link** (Executor in a block, on a different machine, dialing the Scheduler in the core) — and it is now **location-hidden over Tor** (see *Transport* below), so there is no public IP/port to find.
 
 - **Pattern: Noise `KKpsk0`** → suite `Noise_KKpsk0_25519_ChaChaPoly_BLAKE2s`.
   - **`KK`** = both parties' static public keys are known in advance, **provisioned physically (out-of-band)** — this is what "physical key exchange" means. No in-band key negotiation, removing the over-the-wire MITM surface.
@@ -122,6 +177,17 @@ This is the **single exposed/"vulnerable" link** (Executor in a block, on a diff
   - Initiator = **Executor** (dials out); Responder = **Scheduler**.
   - Ephemeral keys per session → **forward secrecy**. Transport uses ChaCha20-Poly1305 with a per-direction **counter nonce** (always unique → also anti-replay) and the Poly1305 tag for per-message integrity.
 - **No cleartext fingerprint:** no magic header — a Noise handshake opens with a random-looking ephemeral key, so the wire is not trivially DPI-identifiable. The **protocol version goes in the Noise `prologue`** (authenticated in the handshake hash, never sent in clear).
+
+#### Transport: over Tor (the *subspace channel*) — adopted
+
+The external channel rides **inside the Tor network** (onion routing), not the clearnet:
+
+- **Scheduler = Tor v3 onion service.** Drones (Executors) dial the `.onion`; the Scheduler's IP is never revealed. **No clearnet listening port** — inbound arrives via Tor's rendezvous, so this still honours *no inbound toward the WAN* (there is no public IP/port to scan or raid). Location-hiding the core directly blunts the "single point of surveillance/coercion": you cannot raid a core you cannot locate.
+- **Onion client authorization** — only provisioned drones hold the descriptor's client-auth key, so unauthorized parties cannot even reach the rendezvous. This sits *under* Noise `KKpsk0`: Tor gets you to the onion; Noise authenticates the actual Scheduler static key + the drone + mixes the PSK. Defense in depth — neither layer is trusted alone.
+- **Noise runs over Tor's SOCKS5** — the raw `SOCK_STREAM` connects through Tor's SOCKS proxy to the `.onion`; framing and primitives are unchanged. (Manage the onion service / circuits with `stem`.)
+- **Drones are Tor clients** — their IPs are hidden from the core and from observers; the metadata/traffic-analysis surface shrinks on both ends.
+- **Nation-state caveat:** the adversary may *block* Tor → plan for **bridges + pluggable transports (obfs4 / meek)** so a drone behind hostile networking can still reach the rendezvous. Cover traffic / timing defenses remain a redesign item.
+- **Scope:** Tor is for this exposed subspace channel. **Internal core links stay local** (NNpsk0 over the core's own network, not Tor). The GET/SET public-store polling *should* also go over Tor (hides that the core is fetching) — recommended extension.
 
 ### Internal core links — Scheduler↔Broker, Broker↔Storage, GET/SET↔Broker
 
@@ -156,10 +222,13 @@ The design was cross-referenced against **Tanenbaum** (distributed systems) and 
 
 **The redesign is a PROPOSAL pending the owner's per-item decision — do not treat it as adopted.** Headline ideas: blind-router core (E2E to the executor), rotating/one-time identities + key-image-like anti-replay, network anonymity (Tor/I2P + stem/fluff + cover traffic), stateless-over-MongoDB (lean on the replica set for consensus), optional N-block voting for Byzantine-critical work, idempotency as an invariant, view/act key separation. Five open decisions are listed in the redesign doc.
 
+**Relation to the Borg thesis:** the design adopts a **hidden Queen, not a blind router** (see *Filosofia Borg → A Rainha*). So this redesign's headline **blind-router / E2E-to-executor** idea is **deliberately NOT adopted for content**: the Queen (Broker+Scheduler) reads the request in order to orchestrate it. What *is* taken from here: **location-hiding** (Tor — adopted), **distribution / no-SPOF**, the **ephemeral midwife**, **idempotency**, and **Locutus as a blind edge**. **Network anonymity is partly settled:** the subspace channel over Tor (onion service + client auth) is **adopted** (see *Secure channels → Transport*); cover traffic / stem-and-fluff timing defenses stay open. The other redesign items remain per-item pending.
+
 ## Guidance for future work
 
 The first substantive changes will define the project's conventions. As they land:
 
 - Record the chosen language(s), framework, package manager, and the build/lint/test commands here.
 - Replace the "Project status" note once real code exists.
-- Keep terminology consistent: **Scheduler (Escalonador)**, **block** (= Executor + BOTs unit), **BOT** (= a project), **script**, **`bot_ref`** (assinatura do projeto + assinatura do script), **occurrence (ocorrência)**, **exigência** (hardware requirement).
+- Keep terminology consistent: **Scheduler (Escalonador)**, **block** (= Executor + BOTs unit; Borg **drone**), **BOT** (= a project), **script**, **`bot_ref`** (assinatura do projeto + assinatura do script), **occurrence (ocorrência)**, **exigência** (hardware requirement).
+- Borg vocabulary (see *Filosofia Borg*): **drone** (= block), **assimilação** (provisioning payload; model B = key embedded in payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= external Executor↔Scheduler channel, carried over Tor), **Rainha** (= Broker + Scheduler, the central orchestrating mind — kept but **hidden, not blind**; "Rainha escondida"), **Locutus** (= public store, the Queen's *blind mouthpiece* on the WAN).
