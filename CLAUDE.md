@@ -8,7 +8,8 @@ Pre-implementation. The repository currently holds only `README.md`, this file, 
 
 ### Reference artifacts in `doc/`
 
-- `doc/diagrama-arquitetura.svg` / `.png` — rendered architecture (the topology below is the ASCII version).
+- `doc/diagrama-arquitetura.svg` / `.png` — friend-facing rendered architecture (simplified vocabulary; predates the hidden-Queen/Tor/quadrante refinements).
+- `doc/diagrama-arquitetura-tecnico.svg` / `.png` — current technical architecture: the quadrante, the hidden Queen, Locutus, the Tor subspace channel, Noise patterns, and the (undefined) inter-quadrante link.
 - `doc/diagrama-fluxo.svg` / `.png` — execution/flow diagram.
 - `doc/myass-apresentacao.pdf` / `.html` — friend-facing presentation of the project.
 - `doc/analise-tanenbaum.md`, `doc/analise-monero.md`, `doc/redesign-minimum-knowledge-core.md` — theory cross-analyses and the proposed redesign (see *Theoretical analysis* below).
@@ -93,7 +94,14 @@ Because the payload **carries a secret** (static private key + PSK) it is sensit
 
 ## Topology
 
-Two zones:
+**Outermost unit — the quadrante.** Everything below (the WAN edge / Locutus, the trusted core / Rainha, and the blocks) lives inside one big box called a **quadrante**. The system is composed of **many quadrantes**; a single quadrante is a complete, self-sufficient instance of the architecture described here. Rendered in `doc/diagrama-arquitetura-tecnico.svg`.
+
+**Inter-quadrante communication — blind REQUEST/RESPONSE deposit between Queens (adopted; crypto details pending).** Quadrantes talk **Queen-to-Queen** (Rainha ↔ Rainha, plural) through a **blind deposit service** that holds only opaque ciphertext: one Queen *deposits* a REQUEST, the peer Queen *pulls* it; RESPONSEs travel back the same way. This is **Locutus between Queens** — the same blind-dead-drop pattern as the WAN edge, applied between cores. It is **pull-based and carried over Tor**, so it honours *no inbound* and never reveals one core's location to another; the deposit itself is blind (decryption happens only inside each hidden core). Because the deposit is **asynchronous store-and-forward**, the interactive Noise handshakes used elsewhere (`KK`/`NN`) do **not** apply — instead use a **one-way Noise pattern between the Queens' static keys**.
+  - **Recommended (to confirm):** `Noise_Kpsk0_25519_ChaChaPoly_BLAKE2s` one-way — both Queens' static public keys pre-shared out-of-band (like drone provisioning), per-pair PSK, fresh ephemeral per message → forward secrecy.
+  - **Separate repo (owner decision):** the blind deposit itself is being built as its **own generic project in a separate repository** — a reusable *blind dead drop* (store-and-forward, content-blind, pull-based) with no myass-specific knowledge. myass consumes it: the deposit stays generic and never decrypts; myass layers the Queen identity, the one-way Noise crypto, addressing, and REQUEST/RESPONSE semantics **on top**. (Repo name TBD — wire it in here once it exists.)
+  - **Still open:** REQUEST/RESPONSE **idempotency** keys + **anti-replay**; **addressing** (quadrante id = `BLAKE2(Queen static pubkey)` + routing table); cross-quadrante metadata / cover traffic.
+
+Within a quadrante there are two zones:
 
 - **Trusted core:** the `GET`/`SET` edge, the custom Python **broker**, internal **storage (MongoDB)**, and the **Scheduler (Escalonador)**. The **broker + Scheduler together are the Rainha** — the hidden orchestrating mind (see *Filosofia Borg*). Internal links inside the core use their own secure channel (see *Internal core links*).
 - **Distributable block (= drone) = Executor + its BOTs/routines:** self-contained, runs on its own machine outside the core, **accepts no inbound**. **Blocks are the unit of distribution** — replicate blocks to scale and to tolerate failure (lose one block, the others continue). Each block's Executor **dials out** to the Scheduler.
