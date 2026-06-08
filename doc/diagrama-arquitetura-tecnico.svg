@@ -123,7 +123,7 @@
   <text x="450" y="750" text-anchor="middle" font-size="10" fill="#999">assimilação: chave X25519 cunhada no provisionamento, embarcada no payload (Rainha-parteira efêmera, air-gapped) · out-of-band (USB)</text>
 
   <!-- ===================== INTER-QUADRANTE: depósito cego entre Rainhas ===================== -->
-  <text x="30" y="794" font-size="13" font-weight="bold" fill="#9a2f2f">Comunicação inter-quadrante — depósito CEGO de REQUEST/RESPONSE, E2E entre as Rainhas (plural)</text>
+  <text x="30" y="794" font-size="13" font-weight="bold" fill="#9a2f2f">SUBSPACE RELAY (inter-quadrante) — depósito CEGO de REQUEST/RESPONSE, E2E entre as Rainhas (plural) · bdd</text>
 
   <!-- link down from quadrante 1's Rainha -->
   <line x1="450" y1="768" x2="450" y2="812" stroke="#2a5d8a" stroke-width="1.8" marker-start="url(#arrB)" marker-end="url(#arr)"/>
