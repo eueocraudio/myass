@@ -1,251 +1,257 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar com o código deste repositório.
 
-## Project status
+## Estado do projeto
 
-Pre-implementation. The repository currently holds only `README.md`, this file, and the design artifacts under `doc/`. There is **no source code, build tooling, or chosen build commands yet** — those sections will be filled in as the project is scaffolded. This document is the authoritative architecture spec; it is self-contained and does not depend on the founding PDF.
+Pré-implementação. O repositório hoje contém apenas `README.md`, este arquivo e os artefatos de design em `doc/`. **Ainda não há código-fonte, ferramental de build, nem comandos de build escolhidos** — essas seções serão preenchidas conforme o projeto for estruturado. Este documento é a especificação de arquitetura autoritativa; é autocontido e não depende do PDF fundador.
 
-### Reference artifacts in `doc/`
+### Artefatos de referência em `doc/`
 
-- `doc/diagrama-arquitetura.svg` / `.png` — friend-facing rendered architecture (simplified vocabulary; predates the hidden-Queen/Tor/quadrante refinements).
-- `doc/diagrama-arquitetura-tecnico.svg` / `.png` — current technical architecture: the quadrante, the hidden Queen, Locutus, the Tor subspace channel, Noise patterns, and the (undefined) inter-quadrante link.
-- `doc/diagrama-fluxo.svg` / `.png` — execution/flow diagram.
-- `doc/myass-apresentacao.pdf` / `.html` — friend-facing presentation of the project.
-- `doc/analise-tanenbaum.md`, `doc/analise-monero.md`, `doc/redesign-minimum-knowledge-core.md` — theory cross-analyses and the proposed redesign (see *Theoretical analysis* below).
+- `doc/diagrama-arquitetura.svg` / `.png` — arquitetura renderizada para amigos (vocabulário simplificado; anterior aos refinamentos Rainha-escondida/Tor/quadrante).
+- `doc/diagrama-arquitetura-tecnico.svg` / `.png` — arquitetura técnica atual: o quadrante, a Rainha escondida, o Locutus, o canal sub-espacial sobre Tor, os padrões Noise e o link inter-quadrante (subspace relay).
+- `doc/diagrama-fluxo.svg` / `.png` — diagrama de execução/fluxo.
+- `doc/myass-apresentacao.pdf` / `.html` — apresentação do projeto para amigos.
+- `doc/analise-tanenbaum.md`, `doc/analise-monero.md`, `doc/redesign-minimum-knowledge-core.md` — análises cruzadas teóricas e o redesign proposto (ver *Análise teórica* abaixo).
 
-## What the project is
+## O que é o projeto
 
-**myass** ("Assistente Pessoal Local") is an **orchestration platform** that runs entirely on the user's own private, closed infrastructure (no personal data sent to any cloud). Its job is to **orchestrate the execution of routines, including AI routines** — coordinating specialized "Vertical AI" (VAI) models and ordinary automation routines, rather than relying on a single general AI.
+**myass** ("Assistente Pessoal Local") é uma **plataforma de orquestração** que roda inteiramente na infraestrutura privada e fechada do próprio usuário (nenhum dado pessoal enviado a qualquer nuvem). Seu trabalho é **orquestrar a execução de rotinas, incluindo rotinas de IA** — coordenando modelos especializados de "Vertical AI" (VAI) e rotinas comuns de automação, em vez de depender de uma única IA geral.
 
-## Guiding principle: always the most secure path
+## Princípio orientador: sempre o caminho mais seguro
 
-**Always choose the most secure option, even if it is harder or more work.** When security trades off against convenience, effort, or simplicity, security wins by default — propose and build the stronger option without being asked, and only fall back if the owner explicitly decides otherwise.
+**Sempre escolha a opção mais segura, mesmo que seja mais difícil ou dê mais trabalho.** Quando segurança colide com conveniência, esforço ou simplicidade, segurança vence por padrão — proponha e construa a opção mais forte sem que peçam, e só recue se o dono decidir explicitamente o contrário.
 
-### Threat model
+### Modelo de ameaça
 
-The adversary is a **nation-state with broad reach** ("the government has access to everything"); myass is a personal privacy / anti-surveillance system. Consequences that shape every decision:
+O adversário é um **Estado-nação de amplo alcance** ("o governo tem acesso a tudo"); o myass é um sistema pessoal de privacidade / anti-vigilância. Consequências que moldam cada decisão:
 
-- **Non-NIST primitives** are preferred (the privacy-community stack): X25519, ChaCha20-Poly1305, BLAKE2 — all by djb/peers, used by Signal/WireGuard/Tor.
-- **Crypto primitives must be audited, reproducible-build implementations — never hand-rolled.** A self-written cipher leaks the side-channels a state adversary exploits. Writing the *protocol/framing* by hand is fine and intended; writing the *primitives* by hand is not.
-- The real state-level risks live in **endpoints, metadata/traffic analysis, key handling, and physical access** — not in the choice of cipher.
+- **Primitivos não-NIST** são preferidos (a pilha da comunidade de privacidade): X25519, ChaCha20-Poly1305, BLAKE2 — todos de djb/pares, usados por Signal/WireGuard/Tor.
+- **Primitivos criptográficos têm de ser implementações auditadas, de build reprodutível — nunca feitos à mão.** Uma cifra escrita por nós vaza os canais laterais que um adversário estatal explora. Escrever o *protocolo/enquadramento* à mão é aceitável e proposital; escrever os *primitivos* à mão, não.
+- Os riscos reais em nível estatal vivem em **endpoints, análise de metadados/tráfego, manuseio de chaves e acesso físico** — não na escolha da cifra.
 
-## Hard architectural requirements
+## Requisitos arquiteturais rígidos
 
-Firm constraints — any design or implementation must satisfy all three:
+Restrições firmes — qualquer design ou implementação deve satisfazer as três:
 
-- **Distributed.** Work runs across multiple nodes, not a single machine.
-- **Fault-resilient.** Tolerate node/component failure and keep operating — no single point of failure; routines must survive and recover.
-- **No inbound connections (toward the WAN).** Nothing may initiate a connection from the outside Internet into the infrastructure. All connections originate inside-out; external work is *pulled* by inside nodes (polling), never pushed in. No listening ports/services exposed to the outside.
+- **Distribuído.** O trabalho roda em múltiplos nós, não numa máquina só.
+- **Resiliente a falhas.** Tolerar falha de nó/componente e continuar operando — sem ponto único de falha; rotinas têm de sobreviver e se recuperar.
+- **Sem conexões de entrada (em direção à WAN).** Nada pode iniciar uma conexão da Internet externa para dentro da infraestrutura. Toda conexão nasce de dentro para fora; trabalho externo é *puxado* pelos nós internos (polling), nunca empurrado para dentro. Nenhuma porta/serviço de escuta exposto para fora.
 
-## Scope decisions (explicitly out)
+## Decisões de escopo (explicitamente fora)
 
-- **No RabbitMQ (or any third-party broker).** The coordination mechanism is still a queue/broker, but it is the project's **own broker, implemented as a service in Python** (see *Broker* below).
-- **No HSM.** Hardware Security Module designs are not implemented.
-- **No security/CVE case study.** Out of scope.
+- **Sem RabbitMQ (ou qualquer broker de terceiros).** O mecanismo de coordenação continua sendo uma fila/broker, mas é o **broker próprio do projeto, implementado como serviço em Python** (ver *Broker* abaixo).
+- **Sem HSM.** Designs de Hardware Security Module não são implementados.
+- **Sem estudo de caso de segurança/CVE.** Fora de escopo.
 
 ## Filosofia Borg: a Rainha escondida
 
-The project's organizing metaphor is the Borg collective. The collective **does** have a Queen — but she is **hidden, never reachable from the outside.** (This refines the earlier "coletivo sem Rainha" slogan: there *is* a Queen; there is simply no Queen the adversary can **find or reach**.) Adopted as the guiding philosophy.
+A metáfora organizadora do projeto é o coletivo Borg. O coletivo **tem** uma Rainha — mas ela é **escondida, jamais alcançável de fora.** (Isso refina o slogan anterior "coletivo sem Rainha": *existe* uma Rainha; simplesmente não há Rainha que o adversário consiga **achar ou alcançar**.) Adotado como filosofia orientadora.
 
-**Tese:** *the adversary's prize is a Queen he can find and coerce.* The collective survives a nation-state by ensuring the central mind is never locatable or reachable from the WAN: her only face to the world is a **blind mouthpiece (Locutus)**, she herself lives **hidden** behind the Tor subspace channel, and she is **distributed** so she is no single point of failure. She is allowed to *know* — she is not allowed to be *reached*.
+**Tese:** *o prêmio do adversário é uma Rainha que ele consiga achar e coagir.* O coletivo sobrevive a um Estado-nação garantindo que a mente central nunca seja localizável ou alcançável a partir da WAN: sua única face para o mundo é um **porta-voz cego (Locutus)**, ela mesma vive **escondida** atrás do canal sub-espacial Tor, e é **distribuída** para não ser ponto único de falha. Ela pode *saber* — só não pode ser *alcançada*.
 
-### Vocabulary (Borg ↔ arquitetura)
+### Vocabulário (Borg ↔ arquitetura)
 
-- **drone = block** (Executor + BOTs) — the replaceable, specialized unit of the collective; the unit of distribution.
-- **designação (designation) = `block_name` = `BLAKE2(static pubkey)`** — the drone's cryptographic identity (see *Identity & traceability*).
-- **assimilação (assimilation) = the provisioning payload** that stands up a brand-new drone (see below).
-- **regeneração (regeneration) = broker lease/redelivery** — a drone dies, its work returns to the queue and is redelivered (the *infra* failure layer).
-- **adaptação (adaptation) = catch chains + redelivery** — the collective absorbs failure and keeps running.
-- **canal sub-espacial (subspace channel) = the Executor↔Scheduler link, carried over Tor** — the location-hidden link between drones and the core (see *Secure channels*).
-- **Rainha (Queen) = Broker + Scheduler** — the central orchestrating mind: reads the client's request and drives the drones. Hidden, not blind (see below).
-- **Locutus = the public store** — the Queen's *blind mouthpiece*: the conversation-bridge on the WAN between a human-language client and the hidden Queen. Holds only opaque ciphertext. (The "Locutus invertido": the canon Locutus knew the collective's mind and so doomed it — ours knows nothing, so capturing it yields a bucket of opaque bytes.)
+- **drone = block** (Executor + BOTs) — a unidade substituível e especializada do coletivo; a unidade de distribuição.
+- **designação = `block_name` = `BLAKE2(pubkey estática)`** — a identidade criptográfica do drone (ver *Identidade & rastreabilidade*).
+- **assimilação = o payload de provisionamento** que ergue um drone novinho (ver abaixo).
+- **regeneração = lease/redelivery do broker** — um drone morre, seu trabalho volta para a fila e é reentregue (a camada de falha de *infra*).
+- **adaptação = cadeias de catch + redelivery** — o coletivo absorve a falha e segue funcionando.
+- **canal sub-espacial = o link Executor↔Scheduler, transportado sobre Tor** — o link de localização oculta entre drones e o núcleo (ver *Canais seguros*).
+- **Rainha = Broker + Scheduler** — a mente orquestradora central: lê o pedido do cliente e dirige os drones. Escondida, não cega (ver abaixo).
+- **Locutus = o armazém público** — o *porta-voz cego* da Rainha: a ponte de conversa na WAN entre um cliente em linguagem humana e a Rainha escondida. Guarda só ciphertext opaco. (O "Locutus invertido": o Locutus do cânone conhecia a mente do coletivo e por isso a condenou — o nosso não sabe nada, então capturá-lo rende um balde de bytes opacos.)
 
 ### A Rainha — escondida, não cega (postura adotada)
 
-**Owner decision:** the collective has a Queen — **the Rainha = Broker + Scheduler** — the central mind that reads the client's request and orchestrates the drones. She is **not** a blind router: you cannot orchestrate what you cannot read, and turning a human-language request into activities/`bot_ref`s is inherently a knowing act. (Deliberate divergence from the redesign's blind-router idea — see *Theoretical analysis*.)
+**Decisão do dono:** o coletivo tem uma Rainha — **a Rainha = Broker + Scheduler** — a mente central que lê o pedido do cliente e orquestra os drones. Ela **não** é um roteador cego: não se orquestra o que não se pode ler, e transformar um pedido em linguagem humana em atividades/`bot_ref`s é, inerentemente, um ato de quem sabe. (Divergência deliberada em relação à ideia de roteador cego do redesign — ver *Análise teórica*.)
 
-Because she *knows*, she is protected by **three walls** instead of by blindness:
+Como ela *sabe*, é protegida por **três muros** em vez de pela cegueira:
 
-1. **Masked** — her only face to the WAN is **Locutus** (the public store), which is *blind*. Capture the mouthpiece → opaque blobs, not the mind. `GET`/`SET` decrypt only **inside** the hidden core, never at Locutus.
-2. **Hidden** — she lives behind the Tor subspace channel (location-hidden onion); there is no IP/port to scan or raid. You cannot raid a Queen you cannot locate.
-3. **Distributed** — replicated/stateless-over-MongoDB so she is no single point of *failure* (the Tanenbaum SPOF), even though she remains a single point of *knowledge*.
+1. **Mascarada** — sua única face para a WAN é o **Locutus** (o armazém público), que é *cego*. Capturar o porta-voz → blobs opacos, não a mente. `GET`/`SET` decifram só **dentro** do núcleo escondido, nunca no Locutus.
+2. **Escondida** — ela vive atrás do canal sub-espacial Tor (onion de localização oculta); não há IP/porta para escanear ou invadir. Não se invade uma Rainha que não se consegue localizar.
+3. **Distribuída** — replicada/stateless-sobre-MongoDB para não ser ponto único de *falha* (o SPOF de Tanenbaum), ainda que permaneça ponto único de *conhecimento*.
 
-**Residual risk, stated honestly:** a Queen who is *located and coerced* is the jackpot (content + audit + inventory). This posture leans hard on Tor + Locutus' blindness; it is the chosen trade-off (centralized natural-language orchestration is worth it), not an oversight.
+**Risco residual, dito com honestidade:** uma Rainha *localizada e coagida* é o jackpot (conteúdo + auditoria + inventário). Esta postura se apoia fortemente no Tor + na cegueira do Locutus; é o trade-off escolhido (a orquestração centralizada em linguagem natural vale a pena), não um descuido.
 
-- **Rainha-parteira efêmera — the provisioning station** (mints drone identities; see assimilation). **Tolerated** because it is momentary, not sovereign: air-gapped, single-use per drone, retains no keys after minting, never online. A midwife of an instant is not a ruler.
+- **Rainha-parteira efêmera — a estação de provisionamento** (cunha identidades de drone; ver assimilação). **Tolerada** porque é momentânea, não soberana: air-gapped, uso único por drone, não retém chaves após a cunhagem, nunca online. Uma parteira de um instante não é uma soberana.
 
-*Open:* whether the human-language interpreter (request → plan, itself an AI routine) runs **inside the Queen** or is dispatched to a **VAI drone** — pending. Physical backing of Locutus (object storage / IPFS / rotating mirrors) — pending.
+*Em aberto:* se o interpretador de linguagem humana (pedido → plano, ele mesmo uma rotina de IA) roda **dentro da Rainha** ou é despachado para um **drone VAI** — pendente. Lastro físico do Locutus (object storage / IPFS / espelhos rotativos) — pendente.
 
-### Assimilação (provisioning a drone) — adopted model
+### Assimilação (provisionar um drone) — modelo adotado
 
-**Owner decision: the keypair is minted at provisioning and embedded in the payload (one-shot assimilation).** Running the payload turns a fresh machine into a drone that can immediately dial out and complete the Noise `KK` handshake — because its pubkey was already registered in the Inventory at minting time. (This is the convenience path, chosen deliberately over the more-secure "key born on the drone" path, so it ships **with** the hardening rules below.)
+**Decisão do dono: o par de chaves é cunhado no provisionamento e embarcado no payload (assimilação de um disparo).** Rodar o payload transforma uma máquina nova num drone que já pode discar para fora e completar o handshake Noise `KK` — porque sua pubkey já foi registrada no Inventory no momento da cunhagem. (É o caminho da conveniência, escolhido deliberadamente em vez do caminho mais seguro "chave nasce no drone", então vem **acompanhado** das regras de endurecimento abaixo.)
 
-What the payload does on the target: check the hardware *exigência*; install the Executor runtime + pinned deps **verifying hashes** (reproducible build — otherwise you assimilate a poisoned drone); install the embedded X25519 static private key + the Scheduler static pubkey + the `KKpsk0` PSK; compute its **designação** `BLAKE2(pubkey)`; configure dial-out (no listening port — honours *no inbound*).
+O que o payload faz no alvo: checar a *exigência* de hardware; instalar o runtime do Executor + dependências fixadas **verificando hashes** (build reprodutível — senão você assimila um drone envenenado); instalar a chave privada estática X25519 embarcada + a pubkey estática do Scheduler + a PSK `KKpsk0`; computar sua **designação** `BLAKE2(pubkey)`; configurar o dial-out (sem porta de escuta — honra o *sem entrada*).
 
-Because the payload **carries a secret** (static private key + PSK) it is sensitive material; these rules hold together:
+Como o payload **carrega um segredo** (chave privada estática + PSK), é material sensível; estas regras valem em conjunto:
 
-1. **One key per drone, never reused** — each payload is unique; designation is unique.
-2. **Provisioning station offline / air-gapped, under LUKS** — the only organ that briefly knows private keys (the ephemeral midwife-Queen).
-3. **Payload is single-use and short-lived** — minimal window if intercepted.
-4. **On the target:** move the private key to LUKS / `chmod 600`; **destroy/zero the payload media** after install.
+1. **Uma chave por drone, nunca reutilizada** — cada payload é único; a designação é única.
+2. **Estação de provisionamento offline / air-gapped, sob LUKS** — o único órgão que conhece brevemente chaves privadas (a Rainha-parteira efêmera).
+3. **Payload de uso único e vida curta** — janela mínima se interceptado.
+4. **No alvo:** mover a chave privada para LUKS / `chmod 600`; **destruir/zerar a mídia do payload** após a instalação.
 
-**Vector follows by force:** since the payload carries a private key, it travels **out-of-band on physical media (USB)** — never on the public store in clear.
+**O vetor decorre por força:** como o payload carrega uma chave privada, ele viaja **out-of-band em mídia física (USB)** — nunca no armazém público em claro.
 
-## Topology
+## Topologia
 
-**Outermost unit — the quadrante.** Everything below (the WAN edge / Locutus, the trusted core / Rainha, and the blocks) lives inside one big box called a **quadrante**. The system is composed of **many quadrantes**; a single quadrante is a complete, self-sufficient instance of the architecture described here. Rendered in `doc/diagrama-arquitetura-tecnico.svg`.
+**Unidade mais externa — o quadrante.** Tudo abaixo (a borda da WAN / Locutus, o núcleo confiável / Rainha, e os blocks) vive dentro de uma caixa grande chamada **quadrante**. O sistema é composto de **muitos quadrantes**; um único quadrante é uma instância completa e autossuficiente da arquitetura aqui descrita. Renderizado em `doc/diagrama-arquitetura-tecnico.svg`.
 
-**Inter-quadrante communication — the `subspace relay` (relé de subespaço), a blind REQUEST/RESPONSE dead drop between Queens (adopted).** The cross-quadrante link is named the **subspace relay** (Star-Trek-consistent with the intra-quadrante *canal sub-espacial*). Quadrantes talk **Queen-to-Queen** (Rainha ↔ Rainha, plural) through a **blind dead drop** that holds only opaque ciphertext: one Queen *deposits* a REQUEST, the peer Queen *pulls* it; RESPONSEs travel back the same way. This is **Locutus between Queens** — the same blind dead-drop pattern as the WAN edge, applied between cores. **Pull-based and carried over Tor**, so it honours *no inbound* and never reveals one core's location to another; decryption happens only inside each hidden core. Because the deposit is **asynchronous store-and-forward**, the interactive Noise handshakes used elsewhere (`KK`/`NN`) do **not** apply.
+**Comunicação inter-quadrante — o `subspace relay` (relé de subespaço), um dead drop cego de REQUEST/RESPONSE entre Rainhas (adotado).** O link entre quadrantes se chama **subspace relay** (coerente com Star Trek e com o *canal sub-espacial* intra-quadrante). Quadrantes conversam **Rainha-a-Rainha** (Rainha ↔ Rainha, plural) por um **dead drop cego** que guarda só ciphertext opaco: uma Rainha *deposita* um REQUEST, a Rainha parceira o *puxa*; RESPONSEs voltam pelo mesmo caminho. É o **Locutus entre Rainhas** — o mesmo padrão de dead drop cego da borda da WAN, aplicado entre núcleos. **Baseado em pull e transportado sobre Tor**, então honra o *sem entrada* e nunca revela a localização de um núcleo para o outro; a decifração só acontece dentro de cada núcleo escondido. Como o depósito é **assíncrono, store-and-forward**, os handshakes Noise interativos usados em outros lugares (`KK`/`NN`) **não** se aplicam.
 
-  - **Implementation: the `bdd` (Blind Dead Drop) project at `../bdd`** — its own generic repo, consumed by myass (see its `CLAUDE.md`). `bdd` is a stdlib HTTPS/HTTP service whose **server is blind**: opaque blobs at opaque 64-hex addresses; it can neither read content nor link the two parts/parties. It already models our exact shape — a **channel** (int) with two **parts, `request` and `response`**, whose addresses + keys derive from *different* `HKDF` labels so the server can't correlate them — plus **long-poll** (`?wait=N`) for pull, **TTL buckets** to blunt temporal metadata, and a `--no-tls` mode meant to run **behind a Tor onion service** (content is already E2E). So the deposit, Tor transport, blindness, and request/response slots are **done** in `bdd`.
-    - **Live `bdd` onion endpoint (stable):** `http://46xhzbennzgxolftzlufl27yzwx4gdfb3xmv5wsuw46tbd74tv6tbjad.onion:8081` (no TLS — content is E2E and the `.onion` is itself the access credential).
+  - **Implementação: o projeto `bdd` (Blind Dead Drop) em `../bdd`** — repo genérico próprio, consumido pelo myass (ver o `CLAUDE.md` dele). O `bdd` é um serviço HTTPS/HTTP em stdlib cujo **servidor é cego**: blobs opacos em endereços opacos de 64-hex; não consegue ler conteúdo nem ligar as duas partes/partes. Ele já modela exatamente o nosso formato — um **channel** (int) com duas **parts, `request` e `response`**, cujos endereços + chaves derivam de labels `HKDF` *diferentes* para o servidor não correlacionar — além de **long-poll** (`?wait=N`) para pull, **TTL buckets** para diluir metadado temporal, e um modo `--no-tls` pensado para rodar **atrás de um serviço onion Tor** (o conteúdo já é E2E). Ou seja, o depósito, o transporte Tor, a cegueira e os slots request/response estão **prontos** no `bdd`.
+    - **Endpoint onion do `bdd` (estável):** `http://46xhzbennzgxolftzlufl27yzwx4gdfb3xmv5wsuw46tbd74tv6tbjad.onion:8081` (sem TLS — o conteúdo é E2E e o `.onion` é, ele próprio, a credencial de acesso).
 
-  - **Crypto layering (DEFINED) — `bdd` is the dumb blind transport; myass owns the E2E.** `bdd`'s own crypto is symmetric (shared 32-byte root secret → `HKDF-SHA256` → per-part address + ChaCha20-Poly1305 key); myass does **not** rely on it for confidentiality or auth. Instead, two nested seals:
-    1. **Inner (myass E2E — the security that matters).** Each REQUEST/RESPONSE is **one one-way Noise message** between the two Queens' X25519 **static** keys — suite **`Noise_Kpsk0_25519_ChaChaPoly_BLAKE2s`**, pattern **`K`** (both Queen statics known in advance, pre-shared **out-of-band** like drone provisioning). The depositing Queen is initiator/sender, the pulling Queen is responder/recipient; REQUEST and RESPONSE are **independent** one-way messages with the roles swapped. A **per-pair PSK** (`psk0`) and a **fresh ephemeral per message** are mixed in. The **prologue** binds protocol version + sender/recipient `quadrante_id` + `bdd` channel + part (authenticated in the handshake hash, never in clear), nailing a blob to its intended slot. The Noise bytes (`e_pub || ciphertext+tag`) are the opaque payload handed to `bdd`.
-    2. **Outer (`bdd` blind transport).** `bdd` re-seals that payload under its channel key at an unlinkable address → server-blindness + part/party unlinkability. If the `bdd` root secret leaks, the attacker still only gets Noise ciphertext.
-    - **Primitives stay non-NIST end-to-end on the inner layer** (X25519 / ChaCha20-Poly1305 / BLAKE2s); `bdd`'s SHA-256 is then only transport metadata, not content protection — so the NIST-hash concern is moot for content.
-    - **Honest FS limit (Noise confidentiality grade 2 for one-way patterns):** the per-message ephemeral gives forward secrecy against **sender** static compromise, but **not** against **recipient** static compromise — a Queen's leaked static key decrypts all past REQUESTs sent to her, and (KCI) lets an attacker forge messages *to* her (the PSK must also be stolen). This is **inherent** to non-interactive delivery: the recipient contributes no fresh randomness. Stated, not hidden.
-    - **Anti-replay / idempotency (one-way Noise is replay-vulnerable by itself):** the authenticated payload carries a **monotonic per-direction counter** + a unique `request_id`; the recipient keeps a high-water mark per sender, rejects `counter ≤ seen` (key-image-style, cf. `doc/analise-monero.md`), and processes each `request_id` **once**. `bdd`'s write-once slots + TTL buckets are a backstop, not the mechanism.
-  - **Stronger option for TRUE async FS (recommended decision, not yet adopted):** X3DH/Signal-style **one-time prekeys** — the recipient Queen pre-publishes signed one-time X25519 prekeys (via a dedicated `bdd` "prekey" channel) and **deletes each after use**, so the per-message key depends on an ephemeral the recipient has destroyed → FS even against recipient-static compromise. Cost: prekey-bundle state + replenishment. Adopt if recipient-key compromise is in scope.
-  - **Still open:** **addressing** — map quadrante identity (`BLAKE2(Queen static pubkey)`) onto `bdd` channels/secrets + a routing table (the `bdd` root secret + channel allocation are provisioned out-of-band per Queen-pair, alongside the Noise statics + PSK); cross-quadrante metadata / cover traffic.
+  - **Camadas de cripto (DEFINIDO) — o `bdd` é o transporte cego burro; o myass é dono do E2E.** A cripto própria do `bdd` é simétrica (segredo-raiz de 32 bytes compartilhado → `HKDF-SHA256` → endereço por part + chave ChaCha20-Poly1305); o myass **não** depende dela para confidencialidade ou autenticação. Em vez disso, dois selos aninhados:
+    1. **Interna (E2E do myass — a segurança que importa).** *Forma mínima de base (sem prekeys) — agora atualizada para o X3DH abaixo, que a supera no caminho de dados.* Cada REQUEST/RESPONSE é **uma mensagem Noise de uma via** entre as chaves X25519 **estáticas** das duas Rainhas — suíte **`Noise_Kpsk0_25519_ChaChaPoly_BLAKE2s`**, padrão **`K`** (as estáticas de ambas conhecidas de antemão, pré-trocadas **out-of-band** como no provisionamento de drone). A Rainha que deposita é iniciadora/remetente, a que puxa é respondedora/destinatária; REQUEST e RESPONSE são mensagens de uma via **independentes**, com os papéis trocados. Uma **PSK por par** (`psk0`) e um **efêmero novo por mensagem** entram na mistura. O **prologue** prende versão do protocolo + `quadrante_id` do remetente/destinatário + channel `bdd` + part (autenticado no hash do handshake, nunca em claro), pregando um blob ao seu slot pretendido. Os bytes Noise (`e_pub || ciphertext+tag`) são o payload opaco entregue ao `bdd`.
+    2. **Externa (transporte cego `bdd`).** O `bdd` re-sela esse payload com a chave do channel num endereço não-correlacionável → cegueira do servidor + impossibilidade de ligar parts/partes. Se o segredo-raiz do `bdd` vazar, o atacante ainda só obtém ciphertext Noise.
+    - **Primitivos seguem não-NIST de ponta a ponta na camada interna** (X25519 / ChaCha20-Poly1305 / BLAKE2s); o SHA-256 do `bdd` é então apenas metadado de transporte, não proteção de conteúdo — então a preocupação com hash NIST não se aplica ao conteúdo.
+    - **Limite honesto de FS (confidencialidade grau 2 do Noise para padrões de uma via):** o efêmero por mensagem dá forward secrecy contra comprometimento da estática do **remetente**, mas **não** da estática do **destinatário** — a chave estática vazada de uma Rainha decifra todos os REQUESTs passados enviados a ela, e (KCI) permite a um atacante forjar mensagens *para* ela (a PSK também tem de ser roubada). Isso é inerente à entrega de uma via **quando o destinatário não contribui material de chave** — exatamente o que os prekeys X3DH (abaixo, adotados) corrigem. Dito, não escondido.
+    - **Anti-replay / idempotência (Noise de uma via é, por si só, vulnerável a replay):** o payload autenticado carrega um **contador monotônico por direção** + um `request_id` único; o destinatário mantém uma marca d'água por remetente, rejeita `contador ≤ visto` (estilo key-image, cf. `doc/analise-monero.md`), e processa cada `request_id` **uma vez**. Os slots write-once + os TTL buckets do `bdd` são uma rede de segurança, não o mecanismo.
+  - **Forward secrecy assíncrona VERDADEIRA — prekeys X3DH (ADOTADO; supera o Noise de uma via de base no caminho de dados).** O acordo de chaves da camada interna é o **X3DH** (Extended Triple Diffie-Hellman — o handshake assíncrono do Signal), adaptado a Rainha↔Rainha sobre o `bdd`. Mesmos primitivos não-NIST: DH X25519, assinaturas **XEd25519**, KDF **BLAKE2s**, AEAD ChaCha20-Poly1305. Compra autenticação mútua **e** FS *mesmo contra o comprometimento da chave de longo prazo do destinatário*, porque o destinatário pré-contribui aleatoriedade de uso único que depois destrói.
+    - **Chaves.** Cada Rainha tem uma **chave de identidade** X25519 `IK` (sua identidade; `quadrante_id = BLAKE2s(IK_pub)`; pré-trocada out-of-band). O destinatário mantém ainda uma **signed prekey** `SPK` rotacionada (assinada sob `IK` via XEd25519 — um único par de chaves faz DH *e* assina) e um lote reabastecido de **one-time prekeys** `OPK[i]`.
+    - **Bundle de prekeys — publicado num "prekey" part dedicado do `bdd`:** `{ IK_pub, SPK_pub, Sig_IK(SPK_pub), OPK_pub[i]+ids }`, o **bundle inteiro assinado sob `IK`**. Como `IK` é provisionada **fisicamente out-of-band**, o bundle é plenamente autenticado mesmo com o `bdd` cego/não confiável — o remetente verifica a assinatura contra a `IK` conhecida, então um relé cego não consegue substituir chaves (pior caso = DoS → fallback). Assinar a lista de OPK (além do X3DH clássico) fecha o vetor de troca de OPK num relé não confiável.
+    - **Remetente, REQUEST A→B:** busca + verifica o bundle de B, escolhe um `OPK`, gera o efêmero `EK_A`; computa `DH1=DH(IK_A,SPK_B)`, `DH2=DH(EK_A,IK_B)`, `DH3=DH(EK_A,SPK_B)`, `DH4=DH(EK_A,OPK_B)`; `SK = HKDF-BLAKE2s(salt = PSK por par, ikm = DH1‖DH2‖DH3‖DH4, info = "myass/subspace-relay/x3dh/v1|<id_A>|<id_B>")` (a PSK-como-salt incorpora o reforço cinto-e-suspensório do `psk0`). Sela o REQUEST com ChaCha20-Poly1305 sob `KDF(SK,"req")`, AD = versão + `quadrante_id`s + channel + part + `opk_id` + contador. Payload `bdd` = `IK_A_pub ‖ EK_A_pub ‖ opk_id ‖ ciphertext` (depois re-selado pela camada externa do `bdd`).
+    - **Destinatário B:** recomputa `SK` a partir das suas privadas + `IK_A`,`EK_A`, então **apaga `OPK_i`** (uso único) → REQUESTs passados permanecem secretos mesmo que `IK_B`/`SPK_B` vazem depois. Responde sob `KDF(SK,"resp")` — **sem um segundo X3DH** (B já tem `SK`): **um X3DH por par request/response**.
+    - **Propriedades:** com um `OPK`, a FS vale contra o comprometimento de longo prazo de **ambas** as partes (a chave de uso único destruída); DH1/DH2 prendem ambas as identidades → autenticação mútua, resistente a KCI; **apagar o OPK também é forte proteção contra replay** do REQUEST (re-enviar um `opk_id` consumido → `SK` irrecuperável). O contador + `request_id` ainda protegem o RESPONSE e o fallback de OPK esgotado.
+    - **Fallback (OPKs esgotados):** X3DH só com `SPK` (descarta DH4) → FS limitada pela rotação da `SPK`, não perfeita. B monitora e **reabastece** os lotes de OPK e rotaciona a `SPK` periodicamente (mantém a `SPK` privada antiga por pouco tempo para mensagens em trânsito, depois apaga). **Nunca reutilizar um `OPK`.**
+  - **Ainda em aberto:** **endereçamento** — mapear a identidade do quadrante (`BLAKE2(pubkey estática da Rainha)`) nos channels/segredos do `bdd` + uma tabela de roteamento (o segredo-raiz do `bdd` + a alocação de channels são provisionados out-of-band por par de Rainhas, junto com as estáticas Noise + a PSK); metadados inter-quadrante / cover traffic.
 
-Within a quadrante there are two zones:
+Dentro de um quadrante há duas zonas:
 
-- **Trusted core:** the `GET`/`SET` edge, the custom Python **broker**, internal **storage (MongoDB)**, and the **Scheduler (Escalonador)**. The **broker + Scheduler together are the Rainha** — the hidden orchestrating mind (see *Filosofia Borg*). Internal links inside the core use their own secure channel (see *Internal core links*).
-- **Distributable block (= drone) = Executor + its BOTs/routines:** self-contained, runs on its own machine outside the core, **accepts no inbound**. **Blocks are the unit of distribution** — replicate blocks to scale and to tolerate failure (lose one block, the others continue). Each block's Executor **dials out** to the Scheduler.
+- **Núcleo confiável:** a borda `GET`/`SET`, o **broker** próprio em Python, o **armazenamento interno (MongoDB)** e o **Scheduler (Escalonador)**. O **broker + Scheduler juntos são a Rainha** — a mente orquestradora escondida (ver *Filosofia Borg*). Os links internos dentro do núcleo usam seu próprio canal seguro (ver *Links internos do núcleo*).
+- **Block distribuível (= drone) = Executor + seus BOTs/rotinas:** autocontido, roda na própria máquina fora do núcleo, **não aceita entrada**. **Blocks são a unidade de distribuição** — replique blocks para escalar e tolerar falha (perca um block, os outros continuam). O Executor de cada block **disca para fora** até o Scheduler.
 
-Inside-out edge: **`GET`** polls **Locutus** (the public store on the WAN) for requests and enqueues them — decrypting only **inside the hidden core** (Locutus stays *blind*); **`SET`** pushes results back out to Locutus. The infrastructure never listens for inbound connections.
+Borda de dentro para fora: o **`GET`** faz polling no **Locutus** (o armazém público na WAN) por pedidos e os enfileira — decifrando só **dentro do núcleo escondido** (o Locutus continua *cego*); o **`SET`** empurra resultados de volta ao Locutus. A infraestrutura nunca escuta conexões de entrada.
 
 ```
-   WAN            │              TRUSTED CORE
+   WAN            │              NÚCLEO CONFIÁVEL
  ┌────────┐  pull │  ┌─────┐   ┌──────────┐   ┌─────────┐
- │ public │◀──────┼──│ GET │──▶│  BROKER  │◀─▶│ MongoDB │
- │ store  │──────▶┼  └─────┘   │ (Python) │   └─────────┘
+ │ armazém│◀──────┼──│ GET │──▶│  BROKER  │◀─▶│ MongoDB │
+ │ público│──────▶┼  └─────┘   │ (Python) │   └─────────┘
  └────────┘  push │  ┌─────┐   └────┬─────┘
       ▲           │  │ SET │◀───────┤
       └───────────┼  └─────┘   ┌────┴──────┐
                   │            │ SCHEDULER │
                   │            └────┬──────┘
-                  │     Noise KKpsk0 │  ← Executors dial out (exposed link)
+                  │     Noise KKpsk0 │  ← Executores discam (link exposto)
                   │   ╔══════════════╪═══════════════╗
                   │ ┌─┴──────┐  ┌────┴───┐  ┌─────────┴┐
                   │ │ BLOCK  │  │ BLOCK  │…│ BLOCK     │  (Executor + BOTs;
-                  │ │ Exec+  │  │ Exec+  │ │ Exec+     │   replicate for scale
-                  │ │ BOTs   │  │ BOTs   │ │ BOTs      │   & fault tolerance)
+                  │ │ Exec+  │  │ Exec+  │ │ Exec+     │   replique para escalar
+                  │ │ BOTs   │  │ BOTs   │ │ BOTs      │   e tolerar falha)
                   │ └────────┘  └────────┘ └───────────┘
 ```
 
-## Identity & traceability
+## Identidade & rastreabilidade
 
-Everything is named by content/identity hashes (all **BLAKE2**, non-NIST), giving tamper-evident traceability.
+Tudo é nomeado por hashes de conteúdo/identidade (todos **BLAKE2**, não-NIST), dando rastreabilidade à prova de adulteração.
 
-- **Block name (the drone's *designação*) = `BLAKE2(block's Noise static public key)`.** The name *is* the block's cryptographic identity, authenticated by the Noise `KK` handshake — a forged block name fails the handshake, so a self-reported name is never trusted.
-- **A BOT is a project (many files) containing multiple scripts.** What an activity runs is identified by a **dual signature `bot_ref` = `{ project_hash, script_hash }`**:
-  - **assinatura do projeto** = `project_hash = BLAKE2(whole project)` — the download/dedup unit.
-  - **assinatura do script** = `script_hash = BLAKE2(the internal script)` — the entry point the activity runs.
-  - One workflow may reference scripts across several projects → multiple projects downloaded (each fetched once, deduped by `project_hash`). The Executor downloads a project, **verifies it against `project_hash` before running**, then runs the script for `script_hash`. Content-addressing doubles as an integrity proof (any tamper changes the hash).
-- **Manifest inside each project** (so it is covered by `project_hash` → tamper-evident). Declares, per script: `script_hash`, the **parameter schema** (fields/attributes/types), **requirements** (the MEM/CPU hardware *exigência* used to classify the activity in the broker, plus dependencies), and **APIs** used. The editor's catalog of bots/scripts is just an index built from manifests; the authoritative source is the in-project hashed manifest.
-- **Traceability lives only in the trusted core**, maintained by the Scheduler:
-  - **Inventory registry:** `block_hash → { available bot_refs }`.
-  - **Append-only audit log:** per execution `(block_hash, bot_ref, occurrence_id, when, input/output refs, status)` — kept **only in the central core**.
+- **Nome do block (a *designação* do drone) = `BLAKE2(pubkey estática Noise do block)`.** O nome *é* a identidade criptográfica do block, autenticada pelo handshake Noise `KK` — um nome de block forjado falha no handshake, então um nome auto-reportado nunca é confiável.
+- **Um BOT é um projeto (muitos arquivos) contendo múltiplos scripts.** O que uma atividade roda é identificado por uma **assinatura dupla `bot_ref` = `{ project_hash, script_hash }`**:
+  - **assinatura do projeto** = `project_hash = BLAKE2(projeto inteiro)` — a unidade de download/dedup.
+  - **assinatura do script** = `script_hash = BLAKE2(o script interno)` — o ponto de entrada que a atividade roda.
+  - Um workflow pode referenciar scripts de vários projetos → múltiplos projetos baixados (cada um buscado uma vez, deduplicado por `project_hash`). O Executor baixa um projeto, **verifica contra o `project_hash` antes de rodar**, e então roda o script do `script_hash`. O endereçamento por conteúdo serve também de prova de integridade (qualquer adulteração muda o hash).
+- **Manifesto dentro de cada projeto** (assim é coberto pelo `project_hash` → à prova de adulteração). Declara, por script: `script_hash`, o **schema de parâmetros** (campos/atributos/tipos), os **requisitos** (a *exigência* de hardware MEM/CPU usada para classificar a atividade no broker, mais dependências) e as **APIs** usadas. O catálogo de bots/scripts do editor é só um índice montado a partir dos manifestos; a fonte autoritativa é o manifesto hasheado dentro do projeto.
+- **A rastreabilidade vive só no núcleo confiável**, mantida pelo Scheduler:
+  - **Registro de inventário (Inventory):** `block_hash → { bot_refs disponíveis }`.
+  - **Log de auditoria append-only:** por execução `(block_hash, bot_ref, occurrence_id, quando, refs de entrada/saída, status)` — mantido **só no núcleo central**.
 
-## Broker (multi-level messageria)
+## Broker (messageria multinível)
 
-The project's own queue/broker, a Python service, distributed and fault-resilient. Two levels:
+A fila/broker própria do projeto, um serviço Python, distribuído e resiliente a falhas. Dois níveis:
 
-- **Level 1 — linked list of nodes, one node per resource class.** Classes come from an arbitrary classification table over **MEM × CPU** (e.g. C1 baixa/baixa, C2 baixa/alta, C3 alta/baixa, C4 alta/alta). The table is *not* severity-ordered.
-- **Level 2 — a ring buffer (circular list) per node**, with two pointers: **W (write/producer)** and **R (read/consumer)**. The **read window = W − R** = activities available to consume.
-- **Empty window (W − R = 0):** return `[]` **immediately** (non-blocking) and, **in parallel**, spawn a loader thread that refills that node from MongoDB. Guard: at most **one load in flight per node** (and back off when MongoDB is also empty).
-- **Durable backing store: MongoDB** (scalable). The ring is an **in-memory window over the persisted backlog** — durability/fault-tolerance live in MongoDB; the ring is the fast cache.
-- **Where an activity is written (W):** into the node whose class matches the activity's *exigência* (declared in the project manifest).
-- **How a block reads:** the Scheduler matches the block's hardware profile (from `HELLO`) against the classes it satisfies — a class is eligible only if the block satisfies **both MEM and CPU**. (Reverted from an earlier severity-ordered scan; the match is the only rule.)
+- **Nível 1 — lista encadeada de nós, um nó por classe de recurso.** As classes vêm de uma tabela de classificação arbitrária sobre **MEM × CPU** (ex.: C1 baixa/baixa, C2 baixa/alta, C3 alta/baixa, C4 alta/alta). A tabela *não* é ordenada por severidade.
+- **Nível 2 — um ring buffer (lista circular) por nó**, com dois ponteiros: **W (write/produtor)** e **R (read/consumidor)**. A **janela de leitura = W − R** = atividades disponíveis para consumir.
+- **Janela vazia (W − R = 0):** retorna `[]` **imediatamente** (não-bloqueante) e, **em paralelo**, dispara uma thread carregadora que reabastece aquele nó a partir do MongoDB. Guarda: no máximo **uma carga em voo por nó** (e back off quando o MongoDB também estiver vazio).
+- **Armazenamento durável de lastro: MongoDB** (escalável). O ring é uma **janela em memória sobre o backlog persistido** — durabilidade/tolerância a falhas vivem no MongoDB; o ring é o cache rápido.
+- **Onde uma atividade é escrita (W):** no nó cuja classe casa com a *exigência* da atividade (declarada no manifesto do projeto).
+- **Como um block lê:** o Scheduler casa o perfil de hardware do block (do `HELLO`) com as classes que ele satisfaz — uma classe só é elegível se o block satisfaz **MEM e CPU**. (Revertido de uma varredura ordenada por severidade anterior; o casamento é a única regra.)
 
-## Routines & chaining (encadeamento)
+## Rotinas & encadeamento
 
-A routine is an **activity tree** (a Nassi-Shneiderman workflow) with node types **block / action / decision / loop**. The tree is an immutable **template**; running it creates an **ocorrência (occurrence)** — a live instance carrying the execution **cursor** (position in the tree, the `parent_id` execution tree, loop/join state, partial results, status, an `occurrence_id`). The **Scheduler drives the chaining**: an activity's returned result is the "tick" that advances the occurrence's cursor and enqueues the next activity. Many occurrences of one template run independently. Each step / decision route targets an activity by its `bot_ref`.
+Uma rotina é uma **árvore de atividades** (um workflow Nassi-Shneiderman) com tipos de nó **block / action / decision / loop**. A árvore é um **template** imutável; rodá-la cria uma **ocorrência** — uma instância viva carregando o **cursor** de execução (posição na árvore, a árvore de execução `parent_id`, estado de loop/join, resultados parciais, status, um `occurrence_id`). O **Scheduler dirige o encadeamento**: o resultado retornado por uma atividade é o "tick" que avança o cursor da ocorrência e enfileira a próxima atividade. Muitas ocorrências de um template rodam independentemente. Cada passo / rota de decisão mira uma atividade pelo seu `bot_ref`.
 
-- **Concurrency:** **synchronous within a single Nassi diagram** (activities run in sequence); parallelism = **multiple diagrams running at once (asynchronous)**.
-- **block:** a linear (sync) sequence of activities.
-- **action:** a unit that goes to the broker and runs a script; its return advances the cursor.
-- **decision (N-way):** the condition is itself a **script that returns a LABEL** (a normal content-addressed, hardware-classified, async activity); the author maps **label → flow** (N routes) in the editor; visual = a downward triangle. The cursor runs the condition-script → gets the label → routes to the mapped flow; flows converge back to the linear sequence.
-- **loop (foreach + fan-out):** foreach over an **array**; the body is a **fixed inner Nassi diagram**, and each iteration is a **copy of that same diagram** fed the item's data (each array item = different input). Copies run **async in parallel** (sync within each). Each child copy carries its **`parent_id`** (the loop) → execution tree; the parent **waits while any child is still running**; the **join** returns an **array of returns** (one per iteration) as the loop's output. `parent_id`/join is general to any fan-out.
-- **Error handling — nested `catch` following the structure.** Every scope (decision, block, loop, workflow) may register a `catch`. An error **bubbles innermost-first outward** through each enclosing scope until one handles it (else the occurrence fails → audit). Within a scope, handlers are ordered most-specific-at-top; **topmost match wins**; each handler is a script. When a catch handles a child's failure, its return is substituted into the join's array for that item.
-- **Per-error disposition (author's choice, 3 options):** **handle with a script** / **propagate up (subir)** / **ignore (swallow)**. The **default is propagate up** (errors surface and bubble — safest). **Ignore is explicit opt-in** (silently swallowing an error is dangerous and must be deliberate).
-- **Two failure layers — do not conflate:** *infra* failures (executor died, timeout) → handled by broker **lease/redelivery** (resilience = *regeneração*); *logical* failures (script errored / unmapped label) → handled by the **catch** chains.
+- **Concorrência:** **síncrona dentro de um único diagrama Nassi** (atividades rodam em sequência); paralelismo = **múltiplos diagramas rodando ao mesmo tempo (assíncrono)**.
+- **block:** uma sequência linear (sync) de atividades.
+- **action:** uma unidade que vai ao broker e roda um script; seu retorno avança o cursor.
+- **decision (N-vias):** a condição é, ela mesma, um **script que retorna um LABEL** (uma atividade normal, endereçada por conteúdo, classificada por hardware, async); o autor mapeia **label → fluxo** (N rotas) no editor; visual = um triângulo apontando para baixo. O cursor roda o script-condição → obtém o label → roteia para o fluxo mapeado; os fluxos convergem de volta à sequência linear.
+- **loop (foreach + fan-out):** foreach sobre um **array**; o corpo é um **diagrama Nassi interno fixo**, e cada iteração é uma **cópia desse mesmo diagrama** alimentada com os dados do item (cada item do array = entrada diferente). As cópias rodam **async em paralelo** (sync dentro de cada uma). Cada cópia-filha carrega seu **`parent_id`** (o loop) → árvore de execução; o pai **espera enquanto qualquer filho ainda estiver rodando**; o **join** retorna um **array de retornos** (um por iteração) como saída do loop. `parent_id`/join é geral a qualquer fan-out.
+- **Tratamento de erros — `catch` aninhado seguindo a estrutura.** Todo escopo (decision, block, loop, workflow) pode registrar um `catch`. Um erro **borbulha de dentro para fora** por cada escopo envolvente até um tratá-lo (senão a ocorrência falha → auditoria). Dentro de um escopo, os handlers são ordenados do mais específico no topo; **o match do topo vence**; cada handler é um script. Quando um catch trata a falha de um filho, seu retorno é substituído no array do join para aquele item.
+- **Disposição por erro (escolha do autor, 3 opções):** **tratar com um script** / **propagar para cima (subir)** / **ignorar (engolir)**. O **padrão é propagar para cima** (erros aparecem e borbulham — mais seguro). **Ignorar é opt-in explícito** (engolir um erro em silêncio é perigoso e tem de ser deliberado).
+- **Duas camadas de falha — não confundir:** falhas de *infra* (executor morreu, timeout) → tratadas pelo **lease/redelivery** do broker (resiliência = *regeneração*); falhas *lógicas* (script deu erro / label não mapeado) → tratadas pelas cadeias de **catch**.
 
-## Workflow editor (authoring tool)
+## Editor de workflow (ferramenta de autoria)
 
-- **PySide6 desktop app on Linux** — the authoring tool for routines. The artifact it edits is a **workflow** = the activity-tree template.
-- **Structured canvas** (Nassi is inherently structured — no free-floating arrows; flow is contiguous boxes + nesting). Built on **`QGraphicsView` + `QGraphicsScene`**, each node type a `QGraphicsItem` subclass: action = box, decision = downward triangle + columns, loop = container box wrapping the inner diagram, block = vertical stack. The user **inserts/snaps blocks** (no free drawing); the canvas auto-lays-out and is **just the render of the activity tree**, so it stays always-valid and **serializes directly to the template** (one visual block = one tree node).
-- In a workflow the user defines **activities**; each activity has a rich, user-defined schema — **fields, attributes, requirements, APIs, etc.** — plus the BOT (`bot_ref`) it runs and its parameters/input. The schema is **auto-populated from the project manifest**; the user supplies/overrides values.
+- **App desktop PySide6 no Linux** — a ferramenta de autoria de rotinas. O artefato que ela edita é um **workflow** = o template de árvore de atividades.
+- **Canvas estruturado** (Nassi é inerentemente estruturado — sem setas soltas; o fluxo é caixas contíguas + aninhamento). Construído sobre **`QGraphicsView` + `QGraphicsScene`**, cada tipo de nó uma subclasse de `QGraphicsItem`: action = caixa, decision = triângulo para baixo + colunas, loop = caixa-contêiner envolvendo o diagrama interno, block = pilha vertical. O usuário **insere/encaixa blocos** (sem desenho livre); o canvas se auto-organiza e é **apenas o render da árvore de atividades**, então fica sempre válido e **serializa direto para o template** (um bloco visual = um nó da árvore).
+- Num workflow o usuário define **atividades**; cada atividade tem um schema rico, definido pelo usuário — **campos, atributos, requisitos, APIs, etc.** — mais o BOT (`bot_ref`) que ela roda e seus parâmetros/entrada. O schema é **auto-preenchido a partir do manifesto do projeto**; o usuário fornece/sobrescreve valores.
 
-## Secure channels
+## Canais seguros
 
-All channels use a **custom protocol over a raw TCP stream socket** (`SOCK_STREAM`, *not* `SOCK_RAW`) — no HTTP or other classic application protocol. There is **no TLS**; the handshake/encryption **copies the Noise Protocol Framework** (proven design, implemented by us over our own framing). Primitives: **X25519 / ChaCha20-Poly1305 / BLAKE2s** (all non-NIST), from an audited reproducible-build library.
+Todos os canais usam um **protocolo próprio sobre um socket TCP de stream cru** (`SOCK_STREAM`, *não* `SOCK_RAW`) — sem HTTP ou outro protocolo de aplicação clássico. **Não há TLS**; o handshake/criptografia **copia o Noise Protocol Framework** (design comprovado, implementado por nós sobre o nosso próprio enquadramento). Primitivos: **X25519 / ChaCha20-Poly1305 / BLAKE2s** (todos não-NIST), de uma biblioteca auditada de build reprodutível.
 
-### External channel — Executor ↔ Scheduler (the exposed link)
+### Canal externo — Executor ↔ Scheduler (o link exposto)
 
-This is the **single exposed/"vulnerable" link** (Executor in a block, on a different machine, dialing the Scheduler in the core) — and it is now **location-hidden over Tor** (see *Transport* below), so there is no public IP/port to find.
+Este é o **único link exposto/"vulnerável"** (Executor num block, em outra máquina, discando para o Scheduler no núcleo) — e agora está **com localização oculta sobre Tor** (ver *Transporte* abaixo), então não há IP/porta pública para achar.
 
-- **Pattern: Noise `KKpsk0`** → suite `Noise_KKpsk0_25519_ChaChaPoly_BLAKE2s`.
-  - **`KK`** = both parties' static public keys are known in advance, **provisioned physically (out-of-band)** — this is what "physical key exchange" means. No in-band key negotiation, removing the over-the-wire MITM surface.
-  - **`psk0`** = an additional pre-shared key, also provisioned physically, mixed in at the start (belt-and-suspenders auth).
-  - Initiator = **Executor** (dials out); Responder = **Scheduler**.
-  - Ephemeral keys per session → **forward secrecy**. Transport uses ChaCha20-Poly1305 with a per-direction **counter nonce** (always unique → also anti-replay) and the Poly1305 tag for per-message integrity.
-- **No cleartext fingerprint:** no magic header — a Noise handshake opens with a random-looking ephemeral key, so the wire is not trivially DPI-identifiable. The **protocol version goes in the Noise `prologue`** (authenticated in the handshake hash, never sent in clear).
+- **Padrão: Noise `KKpsk0`** → suíte `Noise_KKpsk0_25519_ChaChaPoly_BLAKE2s`.
+  - **`KK`** = as chaves públicas estáticas de ambas as partes são conhecidas de antemão, **provisionadas fisicamente (out-of-band)** — é o que significa "troca física de chave". Sem negociação de chave in-band, removendo a superfície de MITM sobre o fio.
+  - **`psk0`** = uma chave pré-compartilhada adicional, também provisionada fisicamente, misturada no início (autenticação cinto-e-suspensório).
+  - Iniciador = **Executor** (disca para fora); Respondedor = **Scheduler**.
+  - Chaves efêmeras por sessão → **forward secrecy**. O transporte usa ChaCha20-Poly1305 com um **nonce contador** por direção (sempre único → também anti-replay) e a tag Poly1305 para integridade por mensagem.
+- **Sem fingerprint em claro:** sem header mágico — um handshake Noise abre com uma chave efêmera de aparência aleatória, então o fio não é trivialmente identificável por DPI. A **versão do protocolo vai no `prologue` do Noise** (autenticada no hash do handshake, nunca enviada em claro).
 
-#### Transport: over Tor (the *subspace channel*) — adopted
+#### Transporte: sobre Tor (o *canal sub-espacial*) — adotado
 
-The external channel rides **inside the Tor network** (onion routing), not the clearnet:
+O canal externo cavalga **dentro da rede Tor** (onion routing), não na clearnet:
 
-- **Scheduler = Tor v3 onion service.** Drones (Executors) dial the `.onion`; the Scheduler's IP is never revealed. **No clearnet listening port** — inbound arrives via Tor's rendezvous, so this still honours *no inbound toward the WAN* (there is no public IP/port to scan or raid). Location-hiding the core directly blunts the "single point of surveillance/coercion": you cannot raid a core you cannot locate.
-- **Onion client authorization** — only provisioned drones hold the descriptor's client-auth key, so unauthorized parties cannot even reach the rendezvous. This sits *under* Noise `KKpsk0`: Tor gets you to the onion; Noise authenticates the actual Scheduler static key + the drone + mixes the PSK. Defense in depth — neither layer is trusted alone.
-- **Noise runs over Tor's SOCKS5** — the raw `SOCK_STREAM` connects through Tor's SOCKS proxy to the `.onion`; framing and primitives are unchanged. (Manage the onion service / circuits with `stem`.)
-- **Drones are Tor clients** — their IPs are hidden from the core and from observers; the metadata/traffic-analysis surface shrinks on both ends.
-- **Nation-state caveat:** the adversary may *block* Tor → plan for **bridges + pluggable transports (obfs4 / meek)** so a drone behind hostile networking can still reach the rendezvous. Cover traffic / timing defenses remain a redesign item.
-- **Scope:** Tor is for this exposed subspace channel. **Internal core links stay local** (NNpsk0 over the core's own network, not Tor). The GET/SET public-store polling *should* also go over Tor (hides that the core is fetching) — recommended extension.
+- **Scheduler = serviço onion Tor v3.** Drones (Executores) discam o `.onion`; o IP do Scheduler nunca é revelado. **Sem porta de escuta na clearnet** — a entrada chega via rendezvous do Tor, então isso ainda honra o *sem entrada em direção à WAN* (não há IP/porta pública para escanear ou invadir). Ocultar a localização do núcleo embota diretamente o "ponto único de vigilância/coerção": não se invade um núcleo que não se consegue localizar.
+- **Autorização de cliente onion** — só drones provisionados têm a chave de client-auth do descritor, então partes não autorizadas nem alcançam o rendezvous. Isto fica *sob* o Noise `KKpsk0`: o Tor te leva ao onion; o Noise autentica a chave estática real do Scheduler + o drone + mistura a PSK. Defesa em profundidade — nenhuma camada é confiável sozinha.
+- **O Noise roda sobre o SOCKS5 do Tor** — o `SOCK_STREAM` cru conecta pelo proxy SOCKS do Tor até o `.onion`; enquadramento e primitivos não mudam. (Gerenciar o serviço onion / circuitos com `stem`.)
+- **Drones são clientes Tor** — seus IPs ficam ocultos do núcleo e de observadores; a superfície de metadados/análise de tráfego encolhe nas duas pontas.
+- **Ressalva Estado-nação:** o adversário pode *bloquear* o Tor → planejar **bridges + pluggable transports (obfs4 / meek)** para um drone atrás de rede hostil ainda alcançar o rendezvous. Defesas de cover traffic / timing seguem como item de redesign.
+- **Escopo:** o Tor é para este canal sub-espacial exposto. **Os links internos do núcleo ficam locais** (NNpsk0 sobre a rede própria do núcleo, não Tor). O polling GET/SET no armazém público *deveria* sair também por Tor (esconde que o núcleo está buscando) — extensão recomendada.
 
-### Internal core links — Scheduler↔Broker, Broker↔Storage, GET/SET↔Broker
+### Links internos do núcleo — Scheduler↔Broker, Broker↔Storage, GET/SET↔Broker
 
-Inside the trusted core, but still encrypted.
+Dentro do núcleo confiável, mas ainda assim cifrados.
 
-- **Pattern: Noise `NNpsk0`** — ephemeral keys on both sides (dynamic per-session key → forward secrecy), authenticated by a **pre-shared key set at install time**. No per-component static identities.
-- **Per-pair PSK** — each pair of core components has its own install-time PSK (small blast radius if one leaks).
-- The install PSK only *authenticates* the handshake; it does not encrypt traffic, so a leaked key does not expose past sessions (forward secrecy). It may live in `.env` with safeguards: on the LUKS partition, `chmod 600`, gitignored.
-- Same primitives and framing as the external channel; **padding is kept** here too.
+- **Padrão: Noise `NNpsk0`** — chaves efêmeras dos dois lados (chave dinâmica por sessão → forward secrecy), autenticadas por uma **chave pré-compartilhada definida no momento da instalação**. Sem identidades estáticas por componente.
+- **PSK por par** — cada par de componentes do núcleo tem sua própria PSK de instalação (raio de dano pequeno se uma vazar).
+- A PSK de instalação só *autentica* o handshake; não cifra o tráfego, então uma chave vazada não expõe sessões passadas (forward secrecy). Pode viver em `.env` com salvaguardas: na partição LUKS, `chmod 600`, no gitignore.
+- Mesmos primitivos e enquadramento do canal externo; **o padding é mantido** aqui também.
 
-### Framing over TCP — two levels
+### Enquadramento sobre TCP — dois níveis
 
-A **record** = one application message.
+Um **record** = uma mensagem de aplicação.
 
-- **Wire:** `record_len (4B BE)` + record body. The body is a sequence of Noise blocks, each `blk_len (2B BE)` + Noise message (`ciphertext + 16B tag`). `blk_len` is needed because each block is decrypted individually; a single Noise block is capped at 65535 bytes (AEAD limit).
-- **Record plaintext** (before chunking/encrypting): `real_len (4B) || payload || zero-pad to the next multiple of 256`. Then split into chunks of ≤ **65280 bytes** (255×256, a multiple of 256 and ≤ 65519), each encrypted as one Noise transport message; the per-direction counter nonce advances per block.
-- **Receiver:** read `record_len`; read the body; loop `blk_len` → read → Noise-decrypt → append; concatenate chunks → record plaintext; read `real_len`; take the payload; discard padding.
-- **Size-hiding padding (block):** padding to a multiple of 256 lives *inside* the AEAD (record level), so an observer sees only coarse padded sizes.
+- **Fio:** `record_len (4B BE)` + corpo do record. O corpo é uma sequência de blocos Noise, cada um `blk_len (2B BE)` + mensagem Noise (`ciphertext + tag de 16B`). O `blk_len` é necessário porque cada bloco é decifrado individualmente; um único bloco Noise é limitado a 65535 bytes (limite do AEAD).
+- **Plaintext do record** (antes de fatiar/cifrar): `real_len (4B) || payload || zero-pad até o próximo múltiplo de 256`. Depois fatiado em chunks de ≤ **65280 bytes** (255×256, múltiplo de 256 e ≤ 65519), cada um cifrado como uma mensagem de transporte Noise; o nonce contador por direção avança por bloco.
+- **Receptor:** lê `record_len`; lê o corpo; itera `blk_len` → lê → decifra Noise → anexa; concatena chunks → plaintext do record; lê `real_len`; pega o payload; descarta o padding.
+- **Padding que esconde tamanho (bloco):** o padding até um múltiplo de 256 vive *dentro* do AEAD (nível do record), então um observador vê só tamanhos grosseiros já com padding.
 
-### Application layer — Executor ↔ Scheduler (partially defined)
+### Camada de aplicação — Executor ↔ Scheduler (parcialmente definida)
 
-- **Capability-based scheduling (confirmed):** the Executor's `HELLO` carries the block's **hardware profile** (OS name, MEM, CPU/arch+cores); the Scheduler matches it against broker resource classes (MEM and CPU gate) to pick the best-fit activity.
-- **Pull + work-lease (proposed direction):** the Executor pulls work; each grant carries a lease; if the Executor dies, the lease expires and the broker redelivers (this is the *infra* failure layer). Results are idempotent, keyed by `occurrence_id`/work id; the Executor verifies the BOT project against `bot_ref` before running; identity comes from the Noise handshake, never self-reported. *(The concrete message set / encoding is still open.)*
+- **Escalonamento por capacidade (confirmado):** o `HELLO` do Executor carrega o **perfil de hardware** do block (nome do OS, MEM, CPU/arch+cores); o Scheduler o casa com as classes de recurso do broker (porteira de MEM e CPU) para escolher a atividade que melhor encaixa.
+- **Pull + work-lease (direção proposta):** o Executor puxa trabalho; cada concessão carrega um lease; se o Executor morre, o lease expira e o broker reentrega (esta é a camada de falha de *infra*). Resultados são idempotentes, chaveados por `occurrence_id`/id do trabalho; o Executor verifica o projeto BOT contra o `bot_ref` antes de rodar; a identidade vem do handshake Noise, nunca auto-reportada. *(O conjunto concreto de mensagens / codificação ainda está em aberto.)*
 
-## Theoretical analysis & proposed redesign (not yet adopted)
+## Análise teórica & redesign proposto (ainda não adotado)
 
-The design was cross-referenced against **Tanenbaum** (distributed systems) and **Monero** (privacy network). Both converge on the same weak point: the **central core** (Tanenbaum: scalability bottleneck / logical SPOF; Monero: single point of surveillance/coercion — the core decrypts everything and holds the audit log/inventory/keys). See:
+O design foi cruzado com **Tanenbaum** (sistemas distribuídos) e **Monero** (rede de privacidade). Ambos convergem no mesmo ponto fraco: o **núcleo central** (Tanenbaum: gargalo de escalabilidade / SPOF lógico; Monero: ponto único de vigilância/coerção — o núcleo decifra tudo e detém o log de auditoria/inventário/chaves). Ver:
 
-- `doc/analise-tanenbaum.md` — distributed-systems cross-analysis.
-- `doc/analise-monero.md` — privacy/network cross-analysis.
-- `doc/redesign-minimum-knowledge-core.md` — a proposed "minimum-knowledge core" redesign.
+- `doc/analise-tanenbaum.md` — análise cruzada de sistemas distribuídos.
+- `doc/analise-monero.md` — análise cruzada de privacidade/rede.
+- `doc/redesign-minimum-knowledge-core.md` — um redesign proposto de "núcleo de conhecimento mínimo".
 
-**The redesign is a PROPOSAL pending the owner's per-item decision — do not treat it as adopted.** Headline ideas: blind-router core (E2E to the executor), rotating/one-time identities + key-image-like anti-replay, network anonymity (Tor/I2P + stem/fluff + cover traffic), stateless-over-MongoDB (lean on the replica set for consensus), optional N-block voting for Byzantine-critical work, idempotency as an invariant, view/act key separation. Five open decisions are listed in the redesign doc.
+**O redesign é uma PROPOSTA pendente de decisão item-a-item do dono — não o trate como adotado.** Ideias-chave: núcleo roteador cego (E2E até o executor), identidades rotativas/de uso único + anti-replay estilo key-image, anonimato de rede (Tor/I2P + stem/fluff + cover traffic), stateless-sobre-MongoDB (apoiar-se no replica set para consenso), votação opcional de N-blocks para trabalho crítico bizantino, idempotência como invariante, separação de chaves view/act. Cinco decisões em aberto estão listadas no doc de redesign.
 
-**Relation to the Borg thesis:** the design adopts a **hidden Queen, not a blind router** (see *Filosofia Borg → A Rainha*). So this redesign's headline **blind-router / E2E-to-executor** idea is **deliberately NOT adopted for content**: the Queen (Broker+Scheduler) reads the request in order to orchestrate it. What *is* taken from here: **location-hiding** (Tor — adopted), **distribution / no-SPOF**, the **ephemeral midwife**, **idempotency**, and **Locutus as a blind edge**. **Network anonymity is partly settled:** the subspace channel over Tor (onion service + client auth) is **adopted** (see *Secure channels → Transport*); cover traffic / stem-and-fluff timing defenses stay open. The other redesign items remain per-item pending.
+**Relação com a tese Borg:** o design adota uma **Rainha escondida, não um roteador cego** (ver *Filosofia Borg → A Rainha*). Então a ideia-chave deste redesign de **roteador cego / E2E-até-o-executor** é **deliberadamente NÃO adotada para conteúdo**: a Rainha (Broker+Scheduler) lê o pedido para poder orquestrá-lo. O que *é* aproveitado daqui: **ocultação de localização** (Tor — adotado), **distribuição / sem-SPOF**, a **parteira efêmera**, **idempotência** e o **Locutus como borda cega**. **Anonimato de rede está parcialmente resolvido:** o canal sub-espacial sobre Tor (serviço onion + client auth) está **adotado** (ver *Canais seguros → Transporte*); defesas de cover traffic / timing estilo stem-and-fluff seguem em aberto. Os demais itens do redesign permanecem pendentes item-a-item.
 
-## Guidance for future work
+## Orientação para trabalho futuro
 
-The first substantive changes will define the project's conventions. As they land:
+As primeiras mudanças substantivas vão definir as convenções do projeto. Conforme elas chegarem:
 
-- Record the chosen language(s), framework, package manager, and the build/lint/test commands here.
-- Replace the "Project status" note once real code exists.
-- Keep terminology consistent: **Scheduler (Escalonador)**, **block** (= Executor + BOTs unit; Borg **drone**), **BOT** (= a project), **script**, **`bot_ref`** (assinatura do projeto + assinatura do script), **occurrence (ocorrência)**, **exigência** (hardware requirement), **quadrante** (= outermost unit; a full instance of the architecture), **subspace relay** (= inter-quadrante link; blind dead drop between Queens, implemented on `bdd`).
-- Borg vocabulary (see *Filosofia Borg*): **drone** (= block), **assimilação** (provisioning payload; model B = key embedded in payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= external Executor↔Scheduler channel, carried over Tor), **Rainha** (= Broker + Scheduler, the central orchestrating mind — kept but **hidden, not blind**; "Rainha escondida"), **Locutus** (= public store, the Queen's *blind mouthpiece* on the WAN).
+- Registre aqui a(s) linguagem(ns), framework, gerenciador de pacotes e os comandos de build/lint/test escolhidos.
+- Substitua a nota de "Estado do projeto" assim que houver código real.
+- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script**, **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
+- Vocabulário Borg (ver *Filosofia Borg*): **drone** (= block), **assimilação** (payload de provisionamento; modelo B = chave embarcada no payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= canal externo Executor↔Scheduler, transportado sobre Tor), **Rainha** (= Broker + Scheduler, a mente orquestradora central — mantida, mas **escondida, não cega**; "Rainha escondida"), **Locutus** (= armazém público, o *porta-voz cego* da Rainha na WAN).

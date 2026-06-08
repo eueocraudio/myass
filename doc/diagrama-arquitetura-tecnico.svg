@@ -147,6 +147,6 @@
   <text x="744" y="850" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f3a5f">QUADRANTE 2</text>
   <text x="744" y="870" text-anchor="middle" font-size="10" fill="#5a6b80">(Rainha escondida)</text>
 
-  <text x="450" y="922" text-anchor="middle" font-size="10.5" fill="#9a2f2f">cripto E2E Rainha↔Rainha (DEFINIDA): Noise de UMA via K+psk0 (estáticas pré-trocadas, efêmero/msg) DENTRO do blob bdd · FS só p/ compromisso do remetente</text>
-  <text x="450" y="940" text-anchor="middle" font-size="10.5" fill="#9a2f2f">anti-replay: contador monotônico por direção + request_id (estilo key-image) · FS verdadeira (vs. destinatário) exigiria prekeys X3DH — opção mais forte, não adotada</text>
+  <text x="450" y="922" text-anchor="middle" font-size="10.5" fill="#9a2f2f">cripto E2E Rainha↔Rainha (DENTRO do blob bdd): X3DH — IK + SPK + OPK (X25519 / XEd25519 / BLAKE2s / ChaCha20-Poly1305) · PSK por par no KDF · auth mútua</text>
+  <text x="450" y="940" text-anchor="middle" font-size="10.5" fill="#9a2f2f">FS assíncrona VERDADEIRA: a destinatária publica bundle de prekeys no bdd e APAGA o OPK após o uso · anti-replay por OPK consumido + contador/request_id</text>
 </svg>
