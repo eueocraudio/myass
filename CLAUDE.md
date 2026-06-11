@@ -300,7 +300,7 @@ Uma rotina é uma **árvore de atividades** (um workflow Nassi-Shneiderman) com 
 - **loop (foreach + fan-out):** foreach sobre um **array**; o corpo é um **diagrama Nassi interno fixo**, e cada iteração é uma **cópia desse mesmo diagrama** alimentada com os dados do item (cada item do array = entrada diferente). As cópias rodam **async em paralelo** (sync dentro de cada uma). Cada cópia-filha carrega seu **`parent_id`** (o loop) → árvore de execução; o pai **espera enquanto qualquer filho ainda estiver rodando**; o **join** retorna um **array de retornos** (um por iteração) como saída do loop. `parent_id`/join é geral a qualquer fan-out.
 - **Tratamento de erros — `catch` aninhado seguindo a estrutura.** Todo escopo (decision, block, loop, workflow) pode registrar um `catch`. Um erro **borbulha de dentro para fora** por cada escopo envolvente até um tratá-lo (senão a ocorrência falha → auditoria). Dentro de um escopo, os handlers são ordenados do mais específico no topo; **o match do topo vence**; cada handler é um script. Quando um catch trata a falha de um filho, seu retorno é substituído no array do join para aquele item.
 - **Disposição por erro (escolha do autor, 3 opções):** **tratar com um script** / **propagar para cima (subir)** / **ignorar (engolir)**. O **padrão é propagar para cima** (erros aparecem e borbulham — mais seguro). **Ignorar é opt-in explícito** (engolir um erro em silêncio é perigoso e tem de ser deliberado).
-- **Duas camadas de falha — não confundir:** falhas de *infra* (executor morreu, timeout) → tratadas pelo **lease/redelivery** do broker (resiliência = *regeneração*); falhas *lógicas* (script deu erro / label não mapeado) → tratadas pelas cadeias de **catch**.
+- **Duas camadas de falha — não confundir:** falhas de *infra* (executor morreu, timeout) → tratadas pelo **lease/redelivery** do broker (resiliência = *regeneração*); falhas *lógicas* (script deu erro / label não mapeado) → tratadas pelas cadeias de **catch**. **O ponto de conversão entre as camadas é o esgotamento de `max_tentativas`:** falha de infra crônica é promovida a falha lógica e entra no trilho do catch (ver *Camada de aplicação → Máquina de estados da atividade*).
 
 ## Editor de workflow (ferramenta de autoria)
 
@@ -374,6 +374,39 @@ Decisões do dono, fechadas item a item. Roda por dentro do enquadramento de rec
 - **Lease de atividade longa: o heartbeat estende.** Prever duração de VAI no manifesto é chute; em vez disso, lease curto (ex. 120s) renovado por `WORK_BEAT` (ex. a cada 30s). Drone morto para de bater → lease expira → regeneração, como sempre; script legítimo de horas nunca é reentregue à toa.
 - **Concorrência por block: slots.** O `HELLO` anuncia quantas atividades em paralelo o block aceita (default 1); o `WORK_GET` pede até os slots livres; cada atividade vive independente pelo seu `atividade_id`. Drone sequencial e drone paralelo falam o mesmo protocolo.
 - **Fora desta camada (em aberto): o plano de dados** — como artefato binário grande de saída viaja de volta e vira entrada de outra atividade (as "refs de entrada/saída" que a auditoria menciona). Por ora, resultado = o JSON do `output.json`; binário pequeno embarca em base64 nos params/output.
+
+#### Máquina de estados da atividade (DEFINIDA)
+
+O Scheduler nunca adivinha se uma atividade "demorou muito" ou "falhou" — ele observa **dois sinais e um relógio**: `WORK_BEAT` chegando = drone vivo, filho rodando (lento ≠ morto; não há teto por padrão); `RESULT` chegando = desfecho real; `lease_expira_em` (renovado a cada beat) = o relógio — beat parou → lease vence → morte de *infra* declarada sem prova.
+
+```
+                        ┌─────────────┐
+         broker grava   │ ENFILEIRADA │◀──────────────────────────┐
+                        └──────┬──────┘                           │
+                               │ WORK entregue (lease, tentativa N)│
+                               ▼                                  │
+                        ┌─────────────┐   lease venceu (sem beat) │
+                        │ EXECUTANDO  │───────────────────────────┤
+                        │ beat renova │     tentativa < max?  sim─┘
+                        └──┬───┬───┬──┘     tentativa = max? ──▶ ESGOTADA ──┐
+                  RESULT ok│   │   │                                        │
+                           │   │   │ timeout_total estourou                 │
+                           ▼   │   └─▶ WORK_CANCEL ──▶ erro "timeout" ──┐   │
+                  ┌──────────┐ │ RESULT erro_logico                     ▼   ▼
+                  │ CONCLUÍDA│ └─────────────────────────────▶ ┌──────────────┐
+                  │ (tick ▶) │                                 │ FALHA LÓGICA │
+                  └──────────┘                                 └──────┬───────┘
+                                                                      ▼
+                                                          cadeia de catch da ocorrência
+                                                          (tratar / subir / engolir)
+```
+
+- **Reempilhar é o caminho normal, não exceção:** lease venceu → `tentativa + 1` → volta à fila → outro drone pega. Falha de infra é esperada e barata (*regeneração*).
+- **`max_tentativas` (default global 3, sobrescrevível pelo autor por atividade no workflow):** esgotou → o broker **dropa a atividade** (nunca mais reempilha) — mas **dropar não é sumir em silêncio**: a falha de infra crônica é **promovida a falha lógica** e entra no trilho normal de erros (catch: tratar/subir/engolir; sem catch → ocorrência falha). A auditoria registra o histórico completo de tentativas (quais drones, quando, por quê parou). É o ponto de conversão entre as duas camadas de falha.
+- **`timeout_total` opcional por atividade (do autor, no workflow — não no manifesto):** pega o caso que o lease não pega, o script *pendurado para sempre* (vivo, batendo, nunca termina). Estourou → o Scheduler responde o próximo beat com `WORK_CANCEL` → Executor mata o filho → vira erro lógico "timeout" → catch decide. Sem `timeout_total`, atividade lenta legítima roda indefinidamente.
+- **Mesmo `atividade_id` em todas as tentativas** (ele identifica o passo do cursor; `tentativa` é só contador). Beat de portador antigo (perdeu o lease, já reentregue) → `WORK_CANCEL`.
+- **Primeiro `RESULT` vence**, mesmo vindo do portador antigo — trabalho é idempotente por invariante, resultado válido é resultado válido; o Scheduler conclui, cancela o outro portador, re-ACKa duplicatas sem reprocessar.
+- **Todo o estado vive no MongoDB, transição escrita antes do ACK** — qualquer réplica da Rainha varre leases vencidos e retoma o controle (stateless-sobre-MongoDB valendo para o estado de despacho; sem isso, a morte de uma réplica órfã as atividades em voo).
 
 ## Análise teórica & redesign proposto (ainda não adotado)
 
