@@ -114,7 +114,8 @@ Como o payload **carrega um segredo** (chave privada estática + PSK), é materi
     - **Destinatário B:** recomputa `SK` a partir das suas privadas + `IK_A`,`EK_A`, então **apaga `OPK_i`** (uso único) → REQUESTs passados permanecem secretos mesmo que `IK_B`/`SPK_B` vazem depois. Responde sob `KDF(SK,"resp")` — **sem um segundo X3DH** (B já tem `SK`): **um X3DH por par request/response**.
     - **Propriedades:** com um `OPK`, a FS vale contra o comprometimento de longo prazo de **ambas** as partes (a chave de uso único destruída); DH1/DH2 prendem ambas as identidades → autenticação mútua, resistente a KCI; **apagar o OPK também é forte proteção contra replay** do REQUEST (re-enviar um `opk_id` consumido → `SK` irrecuperável). O contador + `request_id` ainda protegem o RESPONSE e o fallback de OPK esgotado.
     - **Fallback (OPKs esgotados):** X3DH só com `SPK` (descarta DH4) → FS limitada pela rotação da `SPK`, não perfeita. B monitora e **reabastece** os lotes de OPK e rotaciona a `SPK` periodicamente (mantém a `SPK` privada antiga por pouco tempo para mensagens em trânsito, depois apaga). **Nunca reutilizar um `OPK`.**
-  - **Ainda em aberto:** **endereçamento** — mapear a identidade do quadrante (`BLAKE2(pubkey estática da Rainha)`) nos channels/segredos do `bdd` + uma tabela de roteamento (o segredo-raiz do `bdd` + a alocação de channels são provisionados out-of-band por par de Rainhas, junto com as estáticas Noise + a PSK); metadados inter-quadrante / cover traffic.
+  - **Endereçamento (DEFINIDO) — o `quadrante_id` determina os channels do `bdd` (decisão do dono).** O número do channel nunca chega ao servidor `bdd` (ele só vê o endereço 64-hex derivado), então codificar identidade no channel não vaza nada. **`channel(A→B) = int(BLAKE2s("myass/relay/ch|" + id_A + id_B))`**, par **ordenado**: REQUESTs de A→B na part `request` desse channel, RESPONSEs de volta na part `response`; B iniciando conversa usa `channel(B→A)` — cada direção com seu próprio par de slots, determinístico, **zero coordenação**. **Bundle de prekeys X3DH:** channel dedicado `BLAKE2s("myass/relay/prekey|" + id_B + id_A)` — B publica na part `request`, A lê. **Tabela de roteamento por Rainha, provisionada out-of-band** (junto das estáticas Noise + PSK): `quadrante_id → { endpoint onion do bdd, segredo-raiz do par, PSK, IK_pub }` — channels não constam, derivam dos ids.
+  - **Ainda em aberto:** metadados inter-quadrante / cover traffic.
 
 Dentro de um quadrante há duas zonas:
 
@@ -358,7 +359,7 @@ O canal externo cavalga **dentro da rede Tor** (onion routing), não na clearnet
 - **O Noise roda sobre o SOCKS5 do Tor** — o `SOCK_STREAM` cru conecta pelo proxy SOCKS do Tor até o `.onion`; enquadramento e primitivos não mudam. (Gerenciar o serviço onion / circuitos com `stem`.)
 - **Drones são clientes Tor** — seus IPs ficam ocultos do núcleo e de observadores; a superfície de metadados/análise de tráfego encolhe nas duas pontas.
 - **Ressalva Estado-nação:** o adversário pode *bloquear* o Tor → planejar **bridges + pluggable transports (obfs4 / meek)** para um drone atrás de rede hostil ainda alcançar o rendezvous. Defesas de cover traffic / timing seguem como item de redesign.
-- **Escopo:** o Tor é para este canal sub-espacial exposto. **Os links internos do núcleo ficam locais** (NNpsk0 sobre a rede própria do núcleo, não Tor). O polling GET/SET no armazém público *deveria* sair também por Tor (esconde que o núcleo está buscando) — extensão recomendada.
+- **Escopo:** o Tor é para este canal sub-espacial exposto. **Os links internos do núcleo ficam locais** (NNpsk0 sobre a rede própria do núcleo, não Tor). **O polling GET/SET no armazém público: Tor preferencial, surface permitida (decisão do dono).** Tor por padrão (esconde que o núcleo está consultando — é a localização da Rainha que está em jogo); a clearnet fica permitida porque as restrições do lastro público não são controláveis (um object storage comercial pode bloquear exits do Tor / limitar taxa). Trade-off dito: polling pela surface revela o IP do núcleo ao provedor do armazém e a observadores da rota — quando a surface for necessária, a escolha de provedor/mitigação (VPN, host Tor-friendly) vira critério de seleção do lastro físico do Locutus (pendente).
 
 ### Links internos do núcleo — Scheduler↔Broker, Broker↔Storage, GET/SET↔Broker
 
@@ -368,6 +369,15 @@ Dentro do núcleo confiável, mas ainda assim cifrados.
 - **PSK por par** — cada par de componentes do núcleo tem sua própria PSK de instalação (raio de dano pequeno se uma vazar).
 - A PSK de instalação só *autentica* o handshake; não cifra o tráfego, então uma chave vazada não expõe sessões passadas (forward secrecy). Pode viver em `.env` com salvaguardas: na partição LUKS, `chmod 600`, no gitignore.
 - Mesmos primitivos e enquadramento do canal externo; **o padding é mantido** aqui também.
+
+### Borda do cliente — cliente ↔ Locutus ↔ Rainha (parcialmente definida)
+
+O esquema E2E da primeira perna (cliente em linguagem humana → Locutus → núcleo). Decisão do dono:
+
+- **AEAD: ChaCha20-Poly1305 — não AES.** Duas razões: AES é NIST (a pilha é não-NIST de ponta a ponta) e o cliente é de **baixa capacidade** — sem AES-NI, AES em software é 2–3× mais lento que ChaCha20 e vaza timing por cache (tabelas de lookup); o ChaCha20 foi desenhado para ser rápido e constant-time em software puro. Cliente fraco é o caso de uso do ChaCha, não do AES.
+- **Simétrico puro, sem DH no cliente:** **um segredo de 32 bytes por cliente**, cunhado na estação parteira e provisionado **out-of-band** (QR code / USB — nunca pela rede; uma "assimilação-lite"). Um segredo por cliente, nunca reutilizado; **revogar um cliente = esquecer um segredo**; raio de dano de um vazamento = um cliente.
+- **Limites honestos (registrados, não escondidos):** sem DH e — por ora — sem catraca, um segredo vazado decifra **todo o tráfego passado gravado e o futuro** daquele cliente até a revogação; sem contador, replay de blob antigo é possível. Trade-off aceito pela baixa capacidade do cliente e porque os clientes são do dono.
+- **Em aberto (decidir depois, item a item):** catraca simétrica de FS (`k_{n+1} = BLAKE2s(k_n)`, apaga após uso — custo de 1 hash/mensagem); contador anti-replay por direção (o padrão da casa); formato do blob/enquadramento da borda; e **se o Locutus vira uma instância `bdd`** (que já entrega servidor cego, channel por cliente, parts request/response, long-poll, TTL buckets e modo onion prontos — proposta na mesa, não adotada).
 
 ### Enquadramento sobre TCP — dois níveis
 
