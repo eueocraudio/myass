@@ -370,7 +370,7 @@ Dentro do núcleo confiável, mas ainda assim cifrados.
 - A PSK de instalação só *autentica* o handshake; não cifra o tráfego, então uma chave vazada não expõe sessões passadas (forward secrecy). Pode viver em `.env` com salvaguardas: na partição LUKS, `chmod 600`, no gitignore.
 - Mesmos primitivos e enquadramento do canal externo; **o padding é mantido** aqui também.
 
-### Borda do cliente — cliente ↔ Locutus ↔ Rainha (parcialmente definida)
+### Borda do cliente — cliente ↔ Locutus ↔ Rainha (DEFINIDA)
 
 O esquema E2E da primeira perna (cliente em linguagem humana → Locutus → núcleo). Decisão do dono:
 
@@ -378,7 +378,7 @@ O esquema E2E da primeira perna (cliente em linguagem humana → Locutus → nú
 - **Simétrico puro, sem DH no cliente:** **um segredo de 32 bytes por cliente**, cunhado na estação parteira e provisionado **out-of-band** (QR code / USB — nunca pela rede; uma "assimilação-lite"). Um segredo por cliente, nunca reutilizado; **revogar um cliente = esquecer um segredo**; raio de dano de um vazamento = um cliente.
 - **Limites honestos (registrados, não escondidos):** sem DH e — por ora — sem catraca, um segredo vazado decifra **todo o tráfego passado gravado e o futuro** daquele cliente até a revogação; sem contador, replay de blob antigo é possível. Trade-off aceito pela baixa capacidade do cliente e porque os clientes são do dono.
 - **Locutus ≠ `bdd` (decisão do dono — proposta rejeitada):** os clientes são **aplicações comuns, sem Tor**, e a borda pública tem de ser alcançável na surface por HTTPS comum — idealmente hospedável em infraestrutura banal (object storage etc., ver *lastro físico*, pendente), onde não se roda serviço próprio. O que permanece é o **padrão** de dead drop cego (blobs opacos, request/response, servidor que não correlaciona), implementado sobre o lastro que for escolhido — não o reaproveitamento do serviço `bdd`. (Nota: o `bdd` também serve HTTPS na surface; a rejeição é sobre acoplar a borda do cliente a um serviço próprio em vez de armazém comum.)
-- **Em aberto (decidir depois, item a item):** catraca simétrica de FS (`k_{n+1} = BLAKE2s(k_n)`, apaga após uso — custo de 1 hash/mensagem); contador anti-replay por direção (o padrão da casa); formato do blob/enquadramento da borda.
+- **FECHADO (decisão do dono): nada além disso no cliente — ele pode ser um Arduino.** Sem catraca de FS, sem contador anti-replay no dispositivo; os limites honestos acima são o estado final aceito, não pendência. Única salvaguarda, **do lado do núcleo, custo zero para o cliente**: a Rainha processa cada `request_id` **uma vez** (dedup idempotente — já invariante do sistema), então replay de blob capturado vira no-op, não re-execução. O formato do blob/enquadramento da borda é detalhe de implementação, não decisão de design.
 
 ### Enquadramento sobre TCP — dois níveis
 
