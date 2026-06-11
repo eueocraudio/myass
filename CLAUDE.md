@@ -214,6 +214,7 @@ O que o Scheduler manda ao Executor pelo canal sub-espacial. Vidas opostas: o ma
 
 ```json
 {
+  "atividade_id": "atv-…",
   "occurrence_id": "occ-…",
   "bot_ref": { "project_hash": "blake2:…", "script_hash": "blake2:…" },
   "params": { "…": "…" },
@@ -221,6 +222,7 @@ O que o Scheduler manda ao Executor pelo canal sub-espacial. Vidas opostas: o ma
 }
 ```
 
+- **`atividade_id` é único por despacho** — a chave do lease, do `RESULT` e da linha de auditoria; `occurrence_id` é o contexto (uma ocorrência despacha muitas atividades ao longo da vida — lease/idempotência não podem chavear por ele).
 - **Seleção pelo `script_hash`, nunca pelo nome** — nome é etiqueta de humano; em runtime só hash tem autoridade.
 - Executor, antes do spawn: projeto fora do cache → baixa/extrai/recomputa a árvore; o `script_hash` da ordem **tem de constar no manifesto** (senão rejeita — a Rainha pediu o que o projeto não declara); **recomputa o BLAKE2 do entrypoint** (defesa final entre download e execução); valida `params` contra o schema; venv pronto; capacidades vivas (fail-fast: ollama responde?).
 
@@ -253,7 +255,7 @@ EXECUTOR                                          PROCESSO FILHO (script BOT)
 
 ### Distribuição — pelo canal sub-espacial existente
 
-- **Sem canal novo, sem endpoint novo:** o Executor pede (`PROJECT_GET {project_hash}`), o Scheduler serve (`PROJECT_DATA {seq, bytes, fim}` — chunks dentro do enquadramento/records já definidos), lastro durável em **MongoDB GridFS**. Pull sempre — honra o *sem entrada*.
+- **Sem canal novo, sem endpoint novo:** o Executor pede (`PROJECT_GET {project_hash}`), o Scheduler serve (`PROJECT_DATA {seq, fim}` + corpo binário cru — chunks no envelope da camada de aplicação; ver *Camada de aplicação*), lastro durável em **MongoDB GridFS**. Pull sempre — honra o *sem entrada*.
 - **Cache imutável no block:** `~/.myass/projects/<project_hash>/` (árvore extraída e verificada) + `~/.myass/envs/<project_hash>/` — nunca invalida, só cresce (versão nova = hash novo). **Uma transferência em voo por `project_hash`** (mesma regra do carregador do broker). Limpeza: nenhuma por ora; LRU por último uso se apertar.
 - **O `HELLO` anuncia os `project_hash` em cache** → é o que alimenta o Inventory (`block → bot_refs disponíveis`) de verdade; o Scheduler **prefere drone quente**; drone frio continua válido, paga o download na primeira vez.
 - **Lease de estreia** (drone frio): lease normal + margem fixa configurável — cobre download + criação do venv + execução; senão a regeneração reentregaria trabalho saudável no meio do `pip install`.
@@ -350,10 +352,28 @@ Um **record** = uma mensagem de aplicação.
 - **Receptor:** lê `record_len`; lê o corpo; itera `blk_len` → lê → decifra Noise → anexa; concatena chunks → plaintext do record; lê `real_len`; pega o payload; descarta o padding.
 - **Padding que esconde tamanho (bloco):** o padding até um múltiplo de 256 vive *dentro* do AEAD (nível do record), então um observador vê só tamanhos grosseiros já com padding.
 
-### Camada de aplicação — Executor ↔ Scheduler (parcialmente definida)
+### Camada de aplicação — Executor ↔ Scheduler (DEFINIDA)
 
-- **Escalonamento por capacidade (confirmado):** o `HELLO` do Executor carrega o **perfil de hardware** do block (nome do OS, MEM, CPU/arch+cores); o Scheduler o casa com as classes de recurso do broker (porteira de MEM e CPU) para escolher a atividade que melhor encaixa. Com as decisões de BOT, o `HELLO` carrega também as **capacidades** do block (ollama, GPU…) e os **`project_hash` em cache** — o Scheduler casa exigência + capacidades e prefere drone quente (ver *BOT — anatomia e ciclo de vida*).
-- **Pull + work-lease (direção proposta):** o Executor puxa trabalho; cada concessão carrega um lease; se o Executor morre, o lease expira e o broker reentrega (esta é a camada de falha de *infra*). Resultados são idempotentes, chaveados por `occurrence_id`/id do trabalho; o Executor verifica o projeto BOT contra o `bot_ref` antes de rodar; a identidade vem do handshake Noise, nunca auto-reportada. *(O conjunto concreto de mensagens / codificação ainda está em aberto.)*
+Decisões do dono, fechadas item a item. Roda por dentro do enquadramento de records Noise (acima); o Executor sempre inicia; a identidade vem do handshake, nunca auto-reportada.
+
+- **Sessão persistente.** Montar circuito Tor + rendezvous custa segundos, então a conexão fica viva e tudo flui por ela (poll, download, beats). Caiu → reconecta com backoff + jitter, refaz handshake e `HELLO`; **trabalho em voo sobrevive à reconexão** — o filho continua rodando, os beats retomam, o resultado é entregue (aceito se o lease ainda vale; senão a idempotência descarta o duplicado).
+- **Envelope dentro de cada record:** `header_len (4B BE) ‖ header JSON ‖ corpo (bytes crus, opcional)`. Header sempre JSON: `{"t": tipo, "id": seq do remetente, "re": id sendo respondido, …campos}` — o `re` permite intercalar (um beat no meio de uma transferência de projeto). Corpo cru só para binário (`PROJECT_DATA`); mensagens de controle vão com corpo vazio. Evita base64 de 33% no download de projetos, mantendo JSON legível em todo o resto.
+- **Conjunto de mensagens:**
+
+| Executor → Scheduler | Scheduler → Executor | Função |
+|---|---|---|
+| `HELLO` {perfil hw (OS, MEM, CPU/arch+cores), capacidades, `project_hash`es em cache, slots} | `HELLO_OK` {config: intervalo de poll, lease padrão} | abertura de sessão; alimenta Inventory + escalonamento (porteira MEM×CPU + capacidades; prefere drone quente) |
+| `WORK_GET` {slots_livres} | `WORK` {ordem de atividade} ou `NO_WORK` | pull; `NO_WORK` é imediato (espelha o `[]` não-bloqueante do broker) → backoff no Executor |
+| `PROJECT_GET` {project_hash} | `PROJECT_DATA` {seq, fim} + corpo binário · ou `PROJECT_MISS` | download de projeto em chunks com remontagem por `seq`; `MISS` = hash não aprovado/inexistente |
+| `WORK_BEAT` {atividade_id} | `BEAT_ACK` ou `WORK_CANCEL` | heartbeat renova o lease; o ACK é o canal natural de cancelamento (sem push) |
+| `RESULT` {atividade_id, status: ok\|erro_logico, output, stderr, duracao} | `RESULT_ACK` | entrega idempotente; `RESULT` duplicado → re-ACK, sem reprocessar |
+| `WORK_RELEASE` {atividade_id} | `RELEASE_ACK` | devolução limpa (shutdown gracioso) → reentrega imediata, sem esperar o lease expirar |
+| `PING` | `PONG` | liveness da sessão ociosa (Tor mata conexão parada) |
+
+- **`atividade_id` — a chave de despacho.** Uma ocorrência executa muitas atividades (o cursor avança), então lease e idempotência **não** chaveiam por `occurrence_id`: cada despacho gera um `atividade_id` único — chave do lease, do `RESULT` e da linha de auditoria; `occurrence_id` segue como contexto. (A ordem de atividade em *BOT* carrega ambos.)
+- **Lease de atividade longa: o heartbeat estende.** Prever duração de VAI no manifesto é chute; em vez disso, lease curto (ex. 120s) renovado por `WORK_BEAT` (ex. a cada 30s). Drone morto para de bater → lease expira → regeneração, como sempre; script legítimo de horas nunca é reentregue à toa.
+- **Concorrência por block: slots.** O `HELLO` anuncia quantas atividades em paralelo o block aceita (default 1); o `WORK_GET` pede até os slots livres; cada atividade vive independente pelo seu `atividade_id`. Drone sequencial e drone paralelo falam o mesmo protocolo.
+- **Fora desta camada (em aberto): o plano de dados** — como artefato binário grande de saída viaja de volta e vira entrada de outra atividade (as "refs de entrada/saída" que a auditoria menciona). Por ora, resultado = o JSON do `output.json`; binário pequeno embarca em base64 nos params/output.
 
 ## Análise teórica & redesign proposto (ainda não adotado)
 
@@ -373,5 +393,5 @@ As primeiras mudanças substantivas vão definir as convenções do projeto. Con
 
 - Registre aqui a(s) linguagem(ns), framework, gerenciador de pacotes e os comandos de build/lint/test escolhidos.
 - Substitua a nota de "Estado do projeto" assim que houver código real.
-- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script** (= a unidade de execução; 1 spawn = 1 script), **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **capacidade** (recurso de máquina do block, ex. ollama — dependência classe B), **manifesto** (`manifest.json` canônico na raiz do projeto), **ordem de atividade** (o JSON Scheduler→Executor: `{occurrence_id, bot_ref, params, lease_s}`), **registro de publicação** (`(nome, versao) → project_hash` imutável no núcleo), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
+- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script** (= a unidade de execução; 1 spawn = 1 script), **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **capacidade** (recurso de máquina do block, ex. ollama — dependência classe B), **manifesto** (`manifest.json` canônico na raiz do projeto), **ordem de atividade** (o JSON Scheduler→Executor: `{atividade_id, occurrence_id, bot_ref, params, lease_s}`), **`atividade_id`** (único por despacho; chave de lease/resultado/auditoria), **registro de publicação** (`(nome, versao) → project_hash` imutável no núcleo), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
 - Vocabulário Borg (ver *Filosofia Borg*): **drone** (= block), **assimilação** (payload de provisionamento; modelo B = chave embarcada no payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= canal externo Executor↔Scheduler, transportado sobre Tor), **Rainha** (= Broker + Scheduler, a mente orquestradora central — mantida, mas **escondida, não cega**; "Rainha escondida"), **Locutus** (= armazém público, o *porta-voz cego* da Rainha na WAN).
