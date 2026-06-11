@@ -154,7 +154,7 @@ Tudo é nomeado por hashes de conteúdo/identidade (todos **BLAKE2**, não-NIST)
 - **Manifesto dentro de cada projeto** (assim é coberto pelo `project_hash` → à prova de adulteração). Declara `nome`/`versao` do BOT, as dependências de pacote pinadas com hash e, por script: `script_hash`, o **schema de parâmetros** (campos/tipos), a **exigência** de hardware MEM/CPU (classificação no broker), as **capacidades** exigidas (recursos do block, ex. ollama) e as **APIs** usadas. O catálogo de bots/scripts do editor é só um índice montado a partir dos manifestos; a fonte autoritativa é o manifesto hasheado dentro do projeto. (Forma completa: ver *BOT — anatomia e ciclo de vida*.)
 - **A rastreabilidade vive só no núcleo confiável**, mantida pelo Scheduler:
   - **Registro de inventário (Inventory):** `block_hash → { bot_refs disponíveis }`.
-  - **Log de auditoria append-only:** por execução `(block_hash, bot_ref, occurrence_id, quando, refs de entrada/saída, status)` — mantido **só no núcleo central**.
+  - **Log de auditoria append-only:** por execução `(block_hash, bot_ref, occurrence_id, quando, refs de entrada/saída, status)` — mantido **só no núcleo central**. As refs de entrada/saída são os **`data_ref`s** do *Plano de dados* — linhagem content-addressed à prova de adulteração.
 
 ## BOT — anatomia e ciclo de vida (DEFINIDO)
 
@@ -302,6 +302,32 @@ Uma rotina é uma **árvore de atividades** (um workflow Nassi-Shneiderman) com 
 - **Disposição por erro (escolha do autor, 3 opções):** **tratar com um script** / **propagar para cima (subir)** / **ignorar (engolir)**. O **padrão é propagar para cima** (erros aparecem e borbulham — mais seguro). **Ignorar é opt-in explícito** (engolir um erro em silêncio é perigoso e tem de ser deliberado).
 - **Duas camadas de falha — não confundir:** falhas de *infra* (executor morreu, timeout) → tratadas pelo **lease/redelivery** do broker (resiliência = *regeneração*); falhas *lógicas* (script deu erro / label não mapeado) → tratadas pelas cadeias de **catch**. **O ponto de conversão entre as camadas é o esgotamento de `max_tentativas`:** falha de infra crônica é promovida a falha lógica e entra no trilho do catch (ver *Camada de aplicação → Máquina de estados da atividade*).
 
+## Plano de dados (DEFINIDO)
+
+Como um artefato binário grande sai de uma atividade e vira entrada de outra (possivelmente em outro drone — a invariante de pulverização proíbe "deixa no disco que o próximo pega"). Decisões do dono, fechadas item a item. Nenhum canal novo, identidade nova ou serviço novo — tudo nos trilhos existentes.
+
+- **O núcleo é o hub de dados — sem drone-a-drone.** Drones não aceitam entrada e não se conhecem (canal novo = superfície e metadado novos); dado via Locutus/`bdd` misturaria o plano interno com a borda WAN. Todo artefato **sobe ao núcleo e desce do núcleo** pelo canal sub-espacial existente — coerente com a *Rainha escondida, não cega*. Lastro: **GridFS** (junto dos projetos).
+- **Identidade: `data_ref = blake2:<hash do conteúdo>`** — content-addressed como tudo no projeto. De graça: integridade verificável em qualquer ponta, dedup (mesmo conteúdo = mesmo ref = um upload), e as "refs de entrada/saída" da auditoria viram **linhagem à prova de adulteração** (quais bytes entraram/saíram de cada execução, para sempre).
+- **Mensagens:** `DATA_PUT` / `DATA_ACK` e `DATA_GET` / `DATA_CHUNK` / `DATA_MISS` — já incluídas na tabela da *Camada de aplicação*; mesmo envelope/chunking do `PROJECT_*`; o receptor sempre recomputa o BLAKE2 antes de aceitar.
+- **Contrato com o script — arquivos no workdir, refs no JSON; quem traduz é o Executor:**
+
+  ```
+  SAÍDA   script grava saida.png no workdir
+          output.json: {"imagem": {"$file": "saida.png"}}
+          Executor: BLAKE2(saida.png) → DATA_PUT → substitui no JSON:
+                    {"imagem": {"$data": "blake2:9f3a…", "tamanho": 4194304}}
+          → é esse JSON-com-refs que o RESULT entrega e o Scheduler vê
+
+  ENTRADA ordem traz params: {"imagem": {"$data": "blake2:9f3a…"}}
+          Executor: DATA_GET → confere hash → grava workdir/in/imagem.bin
+          input.json do filho: {"imagem": {"$file": "in/imagem.bin"}}
+  ```
+
+  Dado pequeno continua inline no JSON puro; **o autor escolhe pelo gesto** (valor inline ou arquivo `$file`) — sem threshold mágico. O script continua trivial: lê/escreve arquivo local no workdir.
+- **Cache no drone + localidade no Scheduler.** Cache local imutável por `data_ref` com **LRU e orçamento de tamanho** (dado é grande, ao contrário de projeto), **na partição LUKS** que o drone já tem pela assimilação (artefato não fica em disco aberto). O Scheduler sabe qual block produziu cada ref (origem do `RESULT`) e **prefere agendar a atividade consumidora no mesmo block** → `DATA_GET` bate no cache local, transferência zero (mesma lógica do "drone quente" de projetos). O upload ao núcleo acontece **sempre** (durabilidade: o produtor pode morrer e a reentrega cair em outro drone); a localidade só elimina a perna de descida.
+- **Honestidade sobre o custo:** tudo viaja por Tor (~poucos MB/s por circuito). Workflow de dados pesados será lento — é o preço da arquitetura de núcleo escondido; a localidade acima é o que o torna suportável.
+- **Retenção — GC por TTL, auditoria eterna.** Artefato amarrado às ocorrências que o referenciam; ocorrência em estado terminal → quarentena com **TTL configurável (default: 7 dias)** → GC apaga do GridFS. A **auditoria guarda os refs para sempre** (hashes são pequenos; a linhagem sobrevive ao dado). Resultado final ao cliente sai pelo `SET`/Locutus antes do GC, como sempre.
+
 ## Editor de workflow (ferramenta de autoria)
 
 - **App desktop PySide6 no Linux** — a ferramenta de autoria de rotinas. O artefato que ela edita é um **workflow** = o template de árvore de atividades.
@@ -365,6 +391,8 @@ Decisões do dono, fechadas item a item. Roda por dentro do enquadramento de rec
 | `HELLO` {perfil hw (OS, MEM, CPU/arch+cores), capacidades, `project_hash`es em cache, slots} | `HELLO_OK` {config: intervalo de poll, lease padrão} | abertura de sessão; alimenta Inventory + escalonamento (porteira MEM×CPU + capacidades; prefere drone quente) |
 | `WORK_GET` {slots_livres} | `WORK` {ordem de atividade} ou `NO_WORK` | pull; `NO_WORK` é imediato (espelha o `[]` não-bloqueante do broker) → backoff no Executor |
 | `PROJECT_GET` {project_hash} | `PROJECT_DATA` {seq, fim} + corpo binário · ou `PROJECT_MISS` | download de projeto em chunks com remontagem por `seq`; `MISS` = hash não aprovado/inexistente |
+| `DATA_PUT` {data_ref, tamanho, seq, fim} + corpo binário | `DATA_ACK` | upload de artefato em chunks; **ref já existente → ACK imediato sem transferir** (dedup) |
+| `DATA_GET` {data_ref} | `DATA_CHUNK` {seq, fim} + corpo binário · ou `DATA_MISS` | download de artefato; receptor recomputa o BLAKE2 (ver *Plano de dados*) |
 | `WORK_BEAT` {atividade_id} | `BEAT_ACK` ou `WORK_CANCEL` | heartbeat renova o lease; o ACK é o canal natural de cancelamento (sem push) |
 | `RESULT` {atividade_id, status: ok\|erro_logico, output, stderr, duracao} | `RESULT_ACK` | entrega idempotente; `RESULT` duplicado → re-ACK, sem reprocessar |
 | `WORK_RELEASE` {atividade_id} | `RELEASE_ACK` | devolução limpa (shutdown gracioso) → reentrega imediata, sem esperar o lease expirar |
@@ -373,7 +401,7 @@ Decisões do dono, fechadas item a item. Roda por dentro do enquadramento de rec
 - **`atividade_id` — a chave de despacho.** Uma ocorrência executa muitas atividades (o cursor avança), então lease e idempotência **não** chaveiam por `occurrence_id`: cada despacho gera um `atividade_id` único — chave do lease, do `RESULT` e da linha de auditoria; `occurrence_id` segue como contexto. (A ordem de atividade em *BOT* carrega ambos.)
 - **Lease de atividade longa: o heartbeat estende.** Prever duração de VAI no manifesto é chute; em vez disso, lease curto (ex. 120s) renovado por `WORK_BEAT` (ex. a cada 30s). Drone morto para de bater → lease expira → regeneração, como sempre; script legítimo de horas nunca é reentregue à toa.
 - **Concorrência por block: slots.** O `HELLO` anuncia quantas atividades em paralelo o block aceita (default 1); o `WORK_GET` pede até os slots livres; cada atividade vive independente pelo seu `atividade_id`. Drone sequencial e drone paralelo falam o mesmo protocolo.
-- **Fora desta camada (em aberto): o plano de dados** — como artefato binário grande de saída viaja de volta e vira entrada de outra atividade (as "refs de entrada/saída" que a auditoria menciona). Por ora, resultado = o JSON do `output.json`; binário pequeno embarca em base64 nos params/output.
+- **O plano de dados está DEFINIDO em seção própria** (ver *Plano de dados*): artefato grande viaja content-addressed (`data_ref`) via `DATA_PUT`/`DATA_GET`; dado pequeno segue inline no JSON de params/output.
 
 #### Máquina de estados da atividade (DEFINIDA)
 
@@ -426,5 +454,5 @@ As primeiras mudanças substantivas vão definir as convenções do projeto. Con
 
 - Registre aqui a(s) linguagem(ns), framework, gerenciador de pacotes e os comandos de build/lint/test escolhidos.
 - Substitua a nota de "Estado do projeto" assim que houver código real.
-- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script** (= a unidade de execução; 1 spawn = 1 script), **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **capacidade** (recurso de máquina do block, ex. ollama — dependência classe B), **manifesto** (`manifest.json` canônico na raiz do projeto), **ordem de atividade** (o JSON Scheduler→Executor: `{atividade_id, occurrence_id, bot_ref, params, lease_s}`), **`atividade_id`** (único por despacho; chave de lease/resultado/auditoria), **registro de publicação** (`(nome, versao) → project_hash` imutável no núcleo), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
+- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script** (= a unidade de execução; 1 spawn = 1 script), **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **capacidade** (recurso de máquina do block, ex. ollama — dependência classe B), **manifesto** (`manifest.json` canônico na raiz do projeto), **ordem de atividade** (o JSON Scheduler→Executor: `{atividade_id, occurrence_id, bot_ref, params, lease_s}`), **`atividade_id`** (único por despacho; chave de lease/resultado/auditoria), **registro de publicação** (`(nome, versao) → project_hash` imutável no núcleo), **`data_ref`** (artefato content-addressed `blake2:<hash>` no GridFS — ver *Plano de dados*), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
 - Vocabulário Borg (ver *Filosofia Borg*): **drone** (= block), **assimilação** (payload de provisionamento; modelo B = chave embarcada no payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= canal externo Executor↔Scheduler, transportado sobre Tor), **Rainha** (= Broker + Scheduler, a mente orquestradora central — mantida, mas **escondida, não cega**; "Rainha escondida"), **Locutus** (= armazém público, o *porta-voz cego* da Rainha na WAN).
