@@ -207,6 +207,7 @@ Decisões do dono, fechadas item a item. Esta seção é a forma autoritativa do
 
 - **`requirements` é por projeto** (um venv por `project_hash` — ver *Dependências*); o BLAKE2 é o hash autoritativo nosso, o sha256 acompanha porque `pip --require-hashes` só fala SHA-256.
 - **`exigencia` e `capacidades` são por script** (é a atividade que o broker classifica e o Scheduler roteia).
+- **`workdir_mb` (opcional, por script):** declara o tamanho do workdir para artefato gigante — dispara o **workdir LUKS efêmero** em vez do tmpfs (ver *Execução*); o valor declarado é o compromisso de "acertar no tamanho".
 - **`apis`**: declaração de egress externo (convenção: sai via Tor); `[]` = não toca a rede.
 - **Schema de `params` mínimo próprio** — `tipo | obrigatorio | default | descricao`, tipos `str|int|float|bool|list|dict`; validável em stdlib, alimenta o auto-preenchimento do editor; evoluível via `manifest_version`. (JSON Schema completo foi descartado por ora.)
 - **`retorno` é opcional e só para autoria** (o editor valida que decision/join consomem campos que existem na saída anterior); em runtime ninguém o valida — o `output.json` é livre.
@@ -253,7 +254,8 @@ EXECUTOR                                          PROCESSO FILHO (script BOT)
 - **`exit ≠ 0` = falha *lógica*** (matéria das cadeias de `catch`, com o JSON de erro como payload); **travamento não é erro lógico** — é assunto do lease/regeneração. As duas camadas de falha não se misturam.
 - **Limpeza estrutural, não de memória:** `finally` → `rmtree` em todos os caminhos (sucesso, erro lógico, desistência de lease) + **varredura de `/tmp/myass-*` órfãos na partida do Executor** (cobre morte no meio; o trabalho em si o lease já reentregou).
 - **O filho não recebe nada além de `occurrence_id` + `params`** — sem `bot_ref`, sem lease, sem chaves, sem contexto do canal. O `lease_s` morre na fronteira do spawn.
-- Bônus do `/tmp` tmpfs: dado de atividade em **RAM, nunca no disco** (alinha com o risco de acesso físico do modelo de ameaça). Artefato gigante de VAI: refinamento futuro — workdir alternativo na partição LUKS, declarado via manifesto.
+- Bônus do `/tmp` tmpfs: dado de atividade em **RAM, nunca no disco** (alinha com o risco de acesso físico do modelo de ameaça).
+- **Artefato gigante de VAI — workdir LUKS efêmero (DEFINIDO — decisão do dono).** Script que declara `workdir_mb` no manifesto ganha, em vez do tmpfs, um **volume LUKS descartável dimensionado pela declaração** (*acertar no tamanho* é obrigação do manifesto): o Executor cria o arquivo-container do tamanho declarado, `luksFormat` com **chave aleatória só em RAM** (nunca gravada), monta como workdir, roda a atividade e — **obrigatório** — desmonta, `luksClose` e **remove o container** no mesmo `finally` da limpeza estrutural; a varredura de órfãos na partida também desmonta/remove containers abandonados. Chave descartada + container removido = dado criptograficamente irrecuperável. Espaço em disco insuficiente → erro de *infra* → lease reentrega a outro block.
 - Um script é trivial de testar fora do sistema: `echo '{"workdir": "…"}' | python script.py`.
 
 ### Distribuição — pelo canal sub-espacial existente
@@ -476,13 +478,12 @@ A lista consolidada do que ainda não tem decisão. **Mantenha-a atualizada:** f
 
 ### Refinamentos registrados (baixa urgência)
 
-4. Workdir alternativo em LUKS para artefato gigante de VAI (declarável via manifesto; hoje workdir = `/tmp` tmpfs).
-5. LRU/limpeza do cache de projetos nos blocks (hoje cresce sem limite, de propósito).
-6. Parâmetros concretos de operação: a tabela de classes MEM×CPU do broker, defaults do `HELLO_OK` (intervalo de poll, lease padrão), TTL do GC de dados.
+4. LRU/limpeza do cache de projetos nos blocks (hoje cresce sem limite, de propósito).
+5. Parâmetros concretos de operação: a tabela de classes MEM×CPU do broker, defaults do `HELLO_OK` (intervalo de poll, lease padrão), TTL do GC de dados.
 
 ### Implementação (degrau zero)
 
-7. **Não existe código.** Falta: linguagem/versão (Python presumido), layout do repo, ferramental de teste e a ordem de ataque. Convenções sugeridas pelo projeto irmão `bdd`: layout `src/`, `unittest` da stdlib, `install.sh`, dependência mínima (`cryptography`). Ponto de partida natural: enquadramento Noise + broker (coração com menos dependências externas).
+6. **Não existe código.** Falta: linguagem/versão (Python presumido), layout do repo, ferramental de teste e a ordem de ataque. Convenções sugeridas pelo projeto irmão `bdd`: layout `src/`, `unittest` da stdlib, `install.sh`, dependência mínima (`cryptography`). Ponto de partida natural: enquadramento Noise + broker (coração com menos dependências externas).
 
 ## Orientação para trabalho futuro
 
