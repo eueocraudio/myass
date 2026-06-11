@@ -148,13 +148,133 @@ Tudo é nomeado por hashes de conteúdo/identidade (todos **BLAKE2**, não-NIST)
 
 - **Nome do block (a *designação* do drone) = `BLAKE2(pubkey estática Noise do block)`.** O nome *é* a identidade criptográfica do block, autenticada pelo handshake Noise `KK` — um nome de block forjado falha no handshake, então um nome auto-reportado nunca é confiável.
 - **Um BOT é um projeto (muitos arquivos) contendo múltiplos scripts.** O que uma atividade roda é identificado por uma **assinatura dupla `bot_ref` = `{ project_hash, script_hash }`**:
-  - **assinatura do projeto** = `project_hash = BLAKE2(projeto inteiro)` — a unidade de download/dedup.
+  - **assinatura do projeto** = `project_hash = BLAKE2(projeto inteiro)` — a unidade de download/dedup. (Forma canônica: **hash em árvore** — ver *BOT — anatomia e ciclo de vida*.)
   - **assinatura do script** = `script_hash = BLAKE2(o script interno)` — o ponto de entrada que a atividade roda.
   - Um workflow pode referenciar scripts de vários projetos → múltiplos projetos baixados (cada um buscado uma vez, deduplicado por `project_hash`). O Executor baixa um projeto, **verifica contra o `project_hash` antes de rodar**, e então roda o script do `script_hash`. O endereçamento por conteúdo serve também de prova de integridade (qualquer adulteração muda o hash).
-- **Manifesto dentro de cada projeto** (assim é coberto pelo `project_hash` → à prova de adulteração). Declara, por script: `script_hash`, o **schema de parâmetros** (campos/atributos/tipos), os **requisitos** (a *exigência* de hardware MEM/CPU usada para classificar a atividade no broker, mais dependências) e as **APIs** usadas. O catálogo de bots/scripts do editor é só um índice montado a partir dos manifestos; a fonte autoritativa é o manifesto hasheado dentro do projeto.
+- **Manifesto dentro de cada projeto** (assim é coberto pelo `project_hash` → à prova de adulteração). Declara `nome`/`versao` do BOT, as dependências de pacote pinadas com hash e, por script: `script_hash`, o **schema de parâmetros** (campos/tipos), a **exigência** de hardware MEM/CPU (classificação no broker), as **capacidades** exigidas (recursos do block, ex. ollama) e as **APIs** usadas. O catálogo de bots/scripts do editor é só um índice montado a partir dos manifestos; a fonte autoritativa é o manifesto hasheado dentro do projeto. (Forma completa: ver *BOT — anatomia e ciclo de vida*.)
 - **A rastreabilidade vive só no núcleo confiável**, mantida pelo Scheduler:
   - **Registro de inventário (Inventory):** `block_hash → { bot_refs disponíveis }`.
   - **Log de auditoria append-only:** por execução `(block_hash, bot_ref, occurrence_id, quando, refs de entrada/saída, status)` — mantido **só no núcleo central**.
+
+## BOT — anatomia e ciclo de vida (DEFINIDO)
+
+Decisões do dono, fechadas item a item. Esta seção é a forma autoritativa do BOT; o resumo em *Identidade & rastreabilidade* aponta para cá.
+
+### Identidade — hash em árvore + tar como transporte
+
+- **Hash por arquivo** = `BLAKE2(conteúdo)`; **`project_hash` = BLAKE2 da lista ordenada de `(caminho normalizado, hash do arquivo)`**. Só caminho + conteúdo entram — nada de mtime/dono/permissões (metadado de filesystem tornaria o hash irreprodutível). Hashes por arquivo permitem verificação incremental e dedup fino.
+- **Container: `.tar.gz` como veículo de transporte apenas.** A identidade **não** depende dos bytes do tar (mtime/ordem/dono dentro do archive são irrelevantes): quem recebe **extrai e recomputa a árvore**. Extração defensiva com `tarfile filter='data'` (rejeita caminho absoluto, `../`, symlink, device). Artefato nomeado `<nome>_<versao>.tar.gz` — conveniência humana; o sistema nunca confia em nome de arquivo.
+- **`nome` + `versao` vivem no manifesto** (cobertos pelo hash) e são para humanos (catálogo, auditoria legível). O elo com a identidade real é o **registro imutável no núcleo: `(nome, versao) → project_hash`, append-only** — versão publicada nunca re-aponta; mudou um byte, é obrigatoriamente versão nova. `versao` é string opaca para o sistema.
+
+### Invariante de pulverização — 1 execução = 1 script
+
+**O projeto é unidade de *empacotamento*; o script é a unidade de *execução*; o encadeamento é monopólio do Scheduler.**
+
+- Um spawn = um script = uma atividade; o Executor **nunca** roda sequência. Script **não chama script**: toda composição vive na árvore Nassi do workflow — sequência = duas atividades, cada uma classificada/roteada independentemente (podendo cair em drones diferentes).
+- Vários scripts moram no mesmo projeto por **código e ambiente compartilhados** (lib interna importada pelos scripts, um venv, um download, um hash) — empacotamento, não execução.
+- **Consequência: scripts não compartilham estado local** — nem arquivo no workdir (apagado por execução), nem nada na máquina; a próxima atividade pode rodar em outro drone. **Dado só viaja pelo workflow:** o `output.json` de um vira parâmetro do próximo, via Scheduler. Script que assume "o anterior rodou aqui e deixou um arquivo" está quebrado por definição.
+- É por isso que `exigencia`/`capacidades` são **por script**: um script pesado de VAI e um leve de pós-processamento no mesmo projeto vão para drones diferentes.
+
+### Manifesto — `manifest.json` na raiz
+
+**JSON canônico na escrita** (UTF-8, chaves ordenadas, indentação 2, `\n` final): a integridade vem da árvore, mas o canonicalismo garante que republicar o mesmo conteúdo gere byte a byte o mesmo manifesto → mesmo hash. **Quem escreve é o editor/ferramenta de publicação**, validando coerência antes de empacotar (cada `script_hash` confere com o arquivo, cada `entrypoint` existe, `(nome, versao)` respeita a imutabilidade).
+
+```json
+{
+  "manifest_version": 1,
+  "nome": "ocr-notas",
+  "versao": "1.2",
+  "descricao": "…",
+  "requirements": {
+    "pillow": { "versao": "10.4.0", "hashes": ["blake2:…", "sha256:…"] }
+  },
+  "scripts": {
+    "extrair-texto": {
+      "entrypoint": "scripts/extrair_texto.py",
+      "script_hash": "blake2:…",
+      "exigencia": { "mem_mb": 8192, "cpu_cores": 4 },
+      "capacidades": ["ollama:llama3.1-8b"],
+      "apis": [],
+      "params": { "imagem_b64": { "tipo": "str", "obrigatorio": true } },
+      "retorno": { "texto": { "tipo": "str" } }
+    }
+  }
+}
+```
+
+- **`requirements` é por projeto** (um venv por `project_hash` — ver *Dependências*); o BLAKE2 é o hash autoritativo nosso, o sha256 acompanha porque `pip --require-hashes` só fala SHA-256.
+- **`exigencia` e `capacidades` são por script** (é a atividade que o broker classifica e o Scheduler roteia).
+- **`apis`**: declaração de egress externo (convenção: sai via Tor); `[]` = não toca a rede.
+- **Schema de `params` mínimo próprio** — `tipo | obrigatorio | default | descricao`, tipos `str|int|float|bool|list|dict`; validável em stdlib, alimenta o auto-preenchimento do editor; evoluível via `manifest_version`. (JSON Schema completo foi descartado por ora.)
+- **`retorno` é opcional e só para autoria** (o editor valida que decision/join consomem campos que existem na saída anterior); em runtime ninguém o valida — o `output.json` é livre.
+
+### Ordem de atividade — o segundo JSON
+
+O que o Scheduler manda ao Executor pelo canal sub-espacial. Vidas opostas: o manifesto é imutável dentro do tar; a ordem muda a cada atividade/ocorrência.
+
+```json
+{
+  "occurrence_id": "occ-…",
+  "bot_ref": { "project_hash": "blake2:…", "script_hash": "blake2:…" },
+  "params": { "…": "…" },
+  "lease_s": 300
+}
+```
+
+- **Seleção pelo `script_hash`, nunca pelo nome** — nome é etiqueta de humano; em runtime só hash tem autoridade.
+- Executor, antes do spawn: projeto fora do cache → baixa/extrai/recomputa a árvore; o `script_hash` da ordem **tem de constar no manifesto** (senão rejeita — a Rainha pediu o que o projeto não declara); **recomputa o BLAKE2 do entrypoint** (defesa final entre download e execução); valida `params` contra o schema; venv pronto; capacidades vivas (fail-fast: ollama responde?).
+
+### Dependências — duas classes (Environment)
+
+- **Classe A — pacotes Python → venv por projeto.** `~/.myass/envs/<project_hash>/`, criado no primeiro uso com **`pip install --require-hashes`** (pacotes pinados no manifesto — PyPI trocar/comprometer um pacote = instalação **falha**, não drone envenenado; mesma regra de hashes da assimilação). Mesmo projeto → um venv para todos os scripts; hash novo → venv novo; nunca há conflito de versões entre BOTs. Convenção: o pip do drone sai **via Tor**.
+- **Classe B — recursos da máquina (ollama, GPU, ffmpeg…) → capacidade do block, não instalável em runtime.** Faz parte do *corpo* do drone, instalada na **assimilação**. O manifesto **declara** (`"capacidades": ["ollama:llama3.1-8b"]`), o `HELLO` **anuncia**, o Scheduler **casa** (a porteira MEM×CPU ganha essa dimensão), o Executor **verifica fail-fast** (recurso morto → erro de *infra* → lease reentrega a outro block). **Pesos de modelos VAI não viajam no tar** — são capacidade do block.
+
+### Execução — contrato Executor ↔ script (decisão do dono: SEM sandbox)
+
+**Sem isolamento de runtime** — o script roda como processo filho comum do Executor, mesmo usuário (todas as máquinas são do dono; sandbox só traria complexidade). **Trade-off honesto:** um BOT com bug grave tem tudo do drone, incluindo a chave estática e a PSK. O raio de dano é um drone (uma chave por drone; revoga no Inventory; o handshake `KK` rejeita; a regeneração reentrega o trabalho) e **o muro de segurança fica inteiro na cadeia de publicação** (ver *Publicação e autorização*). Convenção mantida: BOT que fala com serviço externo declara em `apis` e sai via Tor (não entrega o IP do drone).
+
+```
+EXECUTOR                                          PROCESSO FILHO (script BOT)
+   mkdtemp /tmp/myass-<occ>-XXXX/  (modo 700)
+   grava input.json {occurrence_id, params}
+   spawn ── stdin: {"workdir": "…"} ──▶           lê    workdir/input.json
+                                                  grava workdir/output.json (+ artefatos)
+   ◀── exit 0 = sucesso · exit ≠ 0 = erro lógico ──
+   lê output.json, envia ao Scheduler (o "tick")  stderr → capturado p/ auditoria
+   finally: rmtree(workdir)
+```
+
+- **Dado de verdade vai em arquivo no workdir** (payload grande de VAI sem sufoco; stdout do protocolo livre de poluição de libs); o stdin carrega só o apontador.
+- **`exit ≠ 0` = falha *lógica*** (matéria das cadeias de `catch`, com o JSON de erro como payload); **travamento não é erro lógico** — é assunto do lease/regeneração. As duas camadas de falha não se misturam.
+- **Limpeza estrutural, não de memória:** `finally` → `rmtree` em todos os caminhos (sucesso, erro lógico, desistência de lease) + **varredura de `/tmp/myass-*` órfãos na partida do Executor** (cobre morte no meio; o trabalho em si o lease já reentregou).
+- **O filho não recebe nada além de `occurrence_id` + `params`** — sem `bot_ref`, sem lease, sem chaves, sem contexto do canal. O `lease_s` morre na fronteira do spawn.
+- Bônus do `/tmp` tmpfs: dado de atividade em **RAM, nunca no disco** (alinha com o risco de acesso físico do modelo de ameaça). Artefato gigante de VAI: refinamento futuro — workdir alternativo na partição LUKS, declarado via manifesto.
+- Um script é trivial de testar fora do sistema: `echo '{"workdir": "…"}' | python script.py`.
+
+### Distribuição — pelo canal sub-espacial existente
+
+- **Sem canal novo, sem endpoint novo:** o Executor pede (`PROJECT_GET {project_hash}`), o Scheduler serve (`PROJECT_DATA {seq, bytes, fim}` — chunks dentro do enquadramento/records já definidos), lastro durável em **MongoDB GridFS**. Pull sempre — honra o *sem entrada*.
+- **Cache imutável no block:** `~/.myass/projects/<project_hash>/` (árvore extraída e verificada) + `~/.myass/envs/<project_hash>/` — nunca invalida, só cresce (versão nova = hash novo). **Uma transferência em voo por `project_hash`** (mesma regra do carregador do broker). Limpeza: nenhuma por ora; LRU por último uso se apertar.
+- **O `HELLO` anuncia os `project_hash` em cache** → é o que alimenta o Inventory (`block → bot_refs disponíveis`) de verdade; o Scheduler **prefere drone quente**; drone frio continua válido, paga o download na primeira vez.
+- **Lease de estreia** (drone frio): lease normal + margem fixa configurável — cobre download + criação do venv + execução; senão a regeneração reentregaria trabalho saudável no meio do `pip install`.
+- **Verificação sempre local e total**, mesmo vindo do canal autenticado: recomputa a árvore inteira + o entrypoint antes do spawn. O canal protege o transporte; o hash protege o conteúdo — nenhuma camada confiada sozinha.
+- **Descartado:** distribuir código via Locutus (código na WAN, mesmo cifrado, é metadado desnecessário) e espelho HTTP interno (superfície nova à toa).
+
+### Publicação e autorização — o muro que substitui o sandbox
+
+Hash dá integridade; o **registro de publicação** dá legitimidade. Coleção **append-only** no MongoDB, espelhada na auditoria:
+
+```
+{ project_hash, nome, versao, manifesto (cópia indexável),
+  publicado_em, publicado_por, status: ativo | revogado }
+```
+
+- **A Rainha só agenda `bot_ref` aprovado:** `project_hash` ativo **e** `script_hash` constando no manifesto registrado. A porteira fecha na origem — um drone nunca vê ordem com hash não aprovado.
+- **Revogação existe, reuso não:** `status: revogado` para o agendamento na hora (ocorrências em voo terminam ou caem no catch); o vínculo `(nome, versao)` fica queimado para sempre; o histórico permanece na auditoria.
+- **A cópia do manifesto no registro é o catálogo do editor** e a fonte de `exigencia`/`capacidades` para o Scheduler sem abrir o tar (a fonte autoritativa continua sendo o manifesto hasheado dentro do projeto).
+- **Quem publica é identidade, não posição de rede:** o editor é **provisionado como cliente do canal sub-espacial, igual a um drone** (par X25519 estático cunhado na assimilação, Noise `KKpsk0`, client-auth do onion), com papel **publicador** (drones são executores). O `publicado_por` vem do handshake, nunca auto-reportado.
+- **Validação dupla:** o editor valida ao empacotar (erro cedo, UX); o **núcleo revalida ao receber** (cliente não se confia, mesmo sendo do dono): recomputa a árvore do tar recebido contra o `project_hash` alegado; manifesto coerente (`script_hash` × arquivo, entrypoints existem, schema bem-formado, requirements com hashes); imutabilidade de `(nome, versao)`. Tudo ok → GridFS + registro + auditoria atomicamente; qualquer falha → rejeição integral, nada parcial.
+- **A cadeia tem três verificações independentes** — publicação (núcleo revalida), agendamento (Rainha só agenda aprovado), execução (Executor recomputa árvore + entrypoint) — nenhuma confiando na anterior. É este o muro que, pela decisão *sem sandbox* acima, faz o papel do isolamento de runtime.
 
 ## Broker (messageria multinível)
 
@@ -232,7 +352,7 @@ Um **record** = uma mensagem de aplicação.
 
 ### Camada de aplicação — Executor ↔ Scheduler (parcialmente definida)
 
-- **Escalonamento por capacidade (confirmado):** o `HELLO` do Executor carrega o **perfil de hardware** do block (nome do OS, MEM, CPU/arch+cores); o Scheduler o casa com as classes de recurso do broker (porteira de MEM e CPU) para escolher a atividade que melhor encaixa.
+- **Escalonamento por capacidade (confirmado):** o `HELLO` do Executor carrega o **perfil de hardware** do block (nome do OS, MEM, CPU/arch+cores); o Scheduler o casa com as classes de recurso do broker (porteira de MEM e CPU) para escolher a atividade que melhor encaixa. Com as decisões de BOT, o `HELLO` carrega também as **capacidades** do block (ollama, GPU…) e os **`project_hash` em cache** — o Scheduler casa exigência + capacidades e prefere drone quente (ver *BOT — anatomia e ciclo de vida*).
 - **Pull + work-lease (direção proposta):** o Executor puxa trabalho; cada concessão carrega um lease; se o Executor morre, o lease expira e o broker reentrega (esta é a camada de falha de *infra*). Resultados são idempotentes, chaveados por `occurrence_id`/id do trabalho; o Executor verifica o projeto BOT contra o `bot_ref` antes de rodar; a identidade vem do handshake Noise, nunca auto-reportada. *(O conjunto concreto de mensagens / codificação ainda está em aberto.)*
 
 ## Análise teórica & redesign proposto (ainda não adotado)
@@ -253,5 +373,5 @@ As primeiras mudanças substantivas vão definir as convenções do projeto. Con
 
 - Registre aqui a(s) linguagem(ns), framework, gerenciador de pacotes e os comandos de build/lint/test escolhidos.
 - Substitua a nota de "Estado do projeto" assim que houver código real.
-- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script**, **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
+- Mantenha a terminologia consistente: **Scheduler (Escalonador)**, **block** (= unidade Executor + BOTs; **drone** Borg), **BOT** (= um projeto), **script** (= a unidade de execução; 1 spawn = 1 script), **`bot_ref`** (assinatura do projeto + assinatura do script), **ocorrência**, **exigência** (requisito de hardware), **capacidade** (recurso de máquina do block, ex. ollama — dependência classe B), **manifesto** (`manifest.json` canônico na raiz do projeto), **ordem de atividade** (o JSON Scheduler→Executor: `{occurrence_id, bot_ref, params, lease_s}`), **registro de publicação** (`(nome, versao) → project_hash` imutável no núcleo), **quadrante** (= unidade mais externa; uma instância completa da arquitetura), **subspace relay** (= link inter-quadrante; dead drop cego entre Rainhas, implementado no `bdd`).
 - Vocabulário Borg (ver *Filosofia Borg*): **drone** (= block), **assimilação** (payload de provisionamento; modelo B = chave embarcada no payload), **designação** (= `block_name`), **regeneração** (= lease/redelivery), **canal sub-espacial** (= canal externo Executor↔Scheduler, transportado sobre Tor), **Rainha** (= Broker + Scheduler, a mente orquestradora central — mantida, mas **escondida, não cega**; "Rainha escondida"), **Locutus** (= armazém público, o *porta-voz cego* da Rainha na WAN).
