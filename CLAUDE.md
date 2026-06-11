@@ -459,6 +459,33 @@ O design foi cruzado com **Tanenbaum** (sistemas distribuídos) e **Monero** (re
 
 **Relação com a tese Borg:** o design adota uma **Rainha escondida, não um roteador cego** (ver *Filosofia Borg → A Rainha*). Então a ideia-chave deste redesign de **roteador cego / E2E-até-o-executor** é **deliberadamente NÃO adotada para conteúdo**: a Rainha (Broker+Scheduler) lê o pedido para poder orquestrá-lo. O que *é* aproveitado daqui: **ocultação de localização** (Tor — adotado), **distribuição / sem-SPOF**, a **parteira efêmera**, **idempotência** e o **Locutus como borda cega**. **Anonimato de rede está parcialmente resolvido:** o canal sub-espacial sobre Tor (serviço onion + client auth) está **adotado** (ver *Canais seguros → Transporte*); defesas de cover traffic / timing estilo stem-and-fluff seguem em aberto. Os demais itens do redesign permanecem pendentes item-a-item.
 
+## Pontos em aberto (registro vivo)
+
+A lista consolidada do que ainda não tem decisão. **Mantenha-a atualizada:** fechou uma decisão → remova daqui e registre na seção correspondente; surgiu pendência nova → entre aqui.
+
+### Segurança / protocolo
+
+1. **Lastro físico do Locutus** — onde o armazém público vive. Três critérios acumulados pelas decisões: (a) infraestrutura banal, só PUT/GET de blob, sem rodar código próprio (object storage S3-compatível, hosting estático etc.); (b) alcançável por HTTPS comum na surface (clientes não usam Tor); (c) idealmente Tor-friendly para o polling do núcleo.
+2. **Cover traffic / metadados** — intra-quadrante (timing do canal sub-espacial) e inter-quadrante (padrão de depósitos no subspace relay).
+3. **Bridges + pluggable transports (obfs4/meek)** — para drone atrás de rede hostil; planejado, sem forma.
+4. **Redesign teórico, item a item** (decisão do dono pendente; ver *Análise teórica*): identidades rotativas/de uso único, votação de N-blocks para trabalho crítico (bizantino), separação de chaves view/act.
+
+### Orquestração / ferramentas
+
+5. **Interpretador de linguagem humana** (pedido → plano): roda dentro da Rainha ou é despachado a um drone VAI — a pendência mais antiga da spec.
+6. **Mensagens de publicação do editor** — o fluxo (validação dupla, registro, identidade publicadora) está definido; falta o par `PUBLISH`/`PUBLISH_ACK` (e consulta de catálogo) na tabela da camada de aplicação para o papel publicador.
+7. **Serialização do template de workflow** — o formato JSON da árvore Nassi e como o template chega/versiona no núcleo.
+
+### Refinamentos registrados (baixa urgência)
+
+8. Workdir alternativo em LUKS para artefato gigante de VAI (declarável via manifesto; hoje workdir = `/tmp` tmpfs).
+9. LRU/limpeza do cache de projetos nos blocks (hoje cresce sem limite, de propósito).
+10. Parâmetros concretos de operação: a tabela de classes MEM×CPU do broker, defaults do `HELLO_OK` (intervalo de poll, lease padrão), TTL do GC de dados.
+
+### Implementação (degrau zero)
+
+11. **Não existe código.** Falta: linguagem/versão (Python presumido), layout do repo, ferramental de teste e a ordem de ataque. Convenções sugeridas pelo projeto irmão `bdd`: layout `src/`, `unittest` da stdlib, `install.sh`, dependência mínima (`cryptography`). Ponto de partida natural: enquadramento Noise + broker (coração com menos dependências externas).
+
 ## Orientação para trabalho futuro
 
 As primeiras mudanças substantivas vão definir as convenções do projeto. Conforme elas chegarem:
