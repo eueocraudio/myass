@@ -1,0 +1,217 @@
+{
+  "descricao": "Coleta, enriquece e relata CVEs (MITRE + CISA KEV + exploit-db + NER).",
+  "manifest_version": 1,
+  "nome": "bot_cve",
+  "requirements": {},
+  "scripts": {
+    "build-pdf": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task10_pdf.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "relatorio": {
+          "obrigatorio": true,
+          "tipo": "list"
+        }
+      },
+      "retorno": {
+        "pdf_path": {
+          "tipo": "str"
+        }
+      },
+      "script_hash": "blake2:54a39307bb081e42316d3c8dd426e5686ea188421d2d018c09f21eb89ea947d9f685e7a22d2670bf58435b3192426841a8409afef7fe178f75d6e11306ba5d4e"
+    },
+    "check-kev": {
+      "apis": [
+        "https://www.cisa.gov"
+      ],
+      "capacidades": [],
+      "entrypoint": "scripts/task04_kev.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "cve": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "kev": {
+          "tipo": "dict"
+        }
+      },
+      "script_hash": "blake2:6c6315ea227c1dce8b54b1fa817da6037191279e46987749dcb15f156bd091e26d884fd3967a0675b42d4afbfe13e5d6d9dbe97ef75cf79f0ee31d6c8a688f33"
+    },
+    "consolidate": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task09_consolidate.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 256
+      },
+      "params": {
+        "cves": {
+          "obrigatorio": true,
+          "tipo": "list"
+        }
+      },
+      "retorno": {
+        "relatorio": {
+          "tipo": "list"
+        },
+        "total": {
+          "tipo": "int"
+        }
+      },
+      "script_hash": "blake2:034d1f38cf33510aea6690da6d264583f76cd17b9c224a9503004b1bf2dbbf91922e2ef6bc58dd3fa56a513056b46645eaf21daeb88d1dc4cd43069bddd5bb27"
+    },
+    "fetch-cve": {
+      "apis": [
+        "https://cveawg.mitre.org"
+      ],
+      "capacidades": [],
+      "entrypoint": "scripts/task03_fetch.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "cve": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "cve": {
+          "tipo": "str"
+        },
+        "dados": {
+          "tipo": "dict"
+        },
+        "referencias": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:2e33f09e7cae1089f3c6628f8a50ac242a6d24b7568c77cf0e1e1e7b0b7ee201c5581ce12f94be94e6e3f5200fd43d8f604768ae8b9bff25ed3de4865018adf6"
+    },
+    "fetch-refs": {
+      "apis": [
+        "*"
+      ],
+      "capacidades": [],
+      "entrypoint": "scripts/task06_refs.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "referencias": {
+          "obrigatorio": false,
+          "tipo": "list"
+        }
+      },
+      "retorno": {
+        "refs": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:a2653548837b98c01c032ed0f3de17ca3ee449c658d24a2dcc85658853a19069d93a7fc3204bfc8c3ba179c3bbfdcb4065da5bed0fd731d6684ca9bd39eae850"
+    },
+    "find-exploit": {
+      "apis": [
+        "https://www.exploit-db.com"
+      ],
+      "capacidades": [],
+      "entrypoint": "scripts/task05_exploit.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "cve": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "exploits": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:50de15e4caf9b3428089fb596efb1432d4cf5d7f28cd9ebdb65d5c4c74532f8ba73b412931fdf46adf8f4c592622431a9942f598c2d1197f8d42028be2bd9fd7"
+    },
+    "ner-spacy": {
+      "apis": [],
+      "capacidades": [
+        "spacy:en_core_web_md"
+      ],
+      "entrypoint": "scripts/task07_ner.py",
+      "exigencia": {
+        "cpu_cores": 2,
+        "mem_mb": 4096
+      },
+      "params": {
+        "dados": {
+          "obrigatorio": false,
+          "tipo": "dict"
+        }
+      },
+      "retorno": {
+        "entities": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:65884840cee6b2b6bc763ac254e280882bfdf1d10c65063249a18ef1866e87b16d1416c546c2102c9435309201a18cc8dcc6fb6b40f49d95060d7fa600fcf05f"
+    },
+    "save-cve": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task08_save.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 256
+      },
+      "params": {
+        "cve": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "salvo": {
+          "tipo": "bool"
+        }
+      },
+      "script_hash": "blake2:a810182e59f4f3649f7073dd45d472db79af823a45c26588c64830bf8cdb67bdf70802b44088ac545866005bb27abcf4634097558e83d5309fe6649c4fbfe198"
+    },
+    "split-cves": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task01_split.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 256
+      },
+      "params": {
+        "texto": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "cves": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:1800a2bd9422f57e10282143833418a0cffe67cca72515d23e90e14f5c24e21e1997ad66c28bc660bdefd45e09954a2106ec12a81c6fece26607632d6b32546d"
+    }
+  },
+  "versao": "1.0"
+}

@@ -1,0 +1,7 @@
+# Roteia tudo o que não for arquivo/dir existente para o index.php (os endereços
+# de blob 64-hex são dinâmicos). Arquivos estáticos (index.html, js/) são servidos
+# direto pelo servidor.
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]

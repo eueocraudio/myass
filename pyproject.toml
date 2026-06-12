@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myass"
+version = "0.1.0"
+description = "myass — Assistente Pessoal Local: plataforma de orquestração de rotinas (inclusive de IA)"
+readme = "README.md"
+# Alvo de produção: Python 3.14 (última estável). O piso 3.13 é só para o
+# ambiente de dev atual (3.13.5); alinhar para 3.14 — ver CLAUDE.md.
+requires-python = ">=3.13"
+# Lastro durável do broker (pymongo) + cripto auditada para o AEAD da borda do
+# cliente (cryptography — ChaCha20-Poly1305; também servirá o Noise).
+dependencies = ["pymongo>=4", "cryptography>=42"]
+
+[project.optional-dependencies]
+test = ["mongomock>=4"]
+admin = ["PySide6>=6"]  # GUI do Painel do administrador (Cliente, Parte I)
+tor = ["stem>=1.8"]     # serviço onion Tor v3 do Scheduler (canal sub-espacial)
+
+[tool.setuptools.packages.find]
+where = ["src"]

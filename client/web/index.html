@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>myass — acesso</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    label { display: block; margin: .8rem 0 .2rem; font-weight: 600; }
+    input, select, textarea { width: 100%; padding: .5rem; box-sizing: border-box; }
+    button { margin-top: .8rem; padding: .5rem 1rem; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
+    #status { color: #555; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>myass</h1>
+  <p>Informe sua chave criptográfica para ver seus workflows e criar ocorrências.
+     A cifra acontece <strong>no seu navegador</strong>; o servidor nunca vê a chave nem o conteúdo.</p>
+
+  <label for="chave">Chave criptográfica (hex de 32 bytes)</label>
+  <input id="chave" type="password" autocomplete="off" placeholder="64 caracteres hexadecimais">
+  <button id="btn-catalogo">Carregar meus workflows</button>
+
+  <label for="workflows">Workflow</label>
+  <select id="workflows"></select>
+
+  <label for="inputs">Entradas (JSON)</label>
+  <textarea id="inputs" rows="4">{}</textarea>
+  <button id="btn-criar">Criar ocorrência</button>
+
+  <div id="status"></div>
+  <h3>Resposta</h3>
+  <pre id="resposta"></pre>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
