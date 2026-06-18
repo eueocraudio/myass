@@ -1,0 +1,132 @@
+{
+  "descricao": "Extrai IPs de WAN de um texto, enriquece (Shodan + AbuseIPDB) e publica um relatório PDF num serviço de upload.",
+  "manifest_version": 1,
+  "nome": "bot_ip",
+  "requirements": {},
+  "scripts": {
+    "abuse-check": {
+      "apis": [
+        "https://api.abuseipdb.com"
+      ],
+      "capacidades": [
+        "api:abuseipdb"
+      ],
+      "entrypoint": "scripts/task03_abuseipdb.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "ip": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "abuseipdb": {
+          "tipo": "dict"
+        }
+      },
+      "script_hash": "blake2:67afc31bcee6979f686a853db6f189f33e55f760b9b8b3212f29e9480ac7cbc94b520725e6bdf2d186b61be698a5769f2c83567d1d32aa4000a2044a13f6b307"
+    },
+    "publish": {
+      "apis": [
+        "*"
+      ],
+      "capacidades": [
+        "upload:endpoint"
+      ],
+      "entrypoint": "scripts/task05_upload.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 256
+      },
+      "params": {
+        "pdf": {
+          "obrigatorio": true,
+          "tipo": "dict"
+        }
+      },
+      "retorno": {
+        "upload_url": {
+          "tipo": "str"
+        }
+      },
+      "script_hash": "blake2:db220da4d31b0abc46bc3891de2a9e829ed340e1ce20d4eb3c24994805c2a358c3dea530d2263ec659115dca19883804325f8e547825f91418ddd16f8a821188"
+    },
+    "report-pdf": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task04_report.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "ips": {
+          "obrigatorio": true,
+          "tipo": "list"
+        }
+      },
+      "retorno": {
+        "pdf": {
+          "tipo": "dict"
+        },
+        "total": {
+          "tipo": "int"
+        }
+      },
+      "script_hash": "blake2:0d58580efdd9c11b92bc4dba7b34a56217ea6e74e6c6f7cef6318edd25259eb7252d2ea38fd14582c6f8fd5047c1878065def8b7859d88cbdc404117db78790e"
+    },
+    "shodan-host": {
+      "apis": [
+        "https://api.shodan.io"
+      ],
+      "capacidades": [
+        "api:shodan"
+      ],
+      "entrypoint": "scripts/task02_shodan.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "ip": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "ip": {
+          "tipo": "str"
+        },
+        "shodan": {
+          "tipo": "dict"
+        }
+      },
+      "script_hash": "blake2:738cd55c99fac84074bf8bf3658f84b0075389cab8963b9b22ef6e7062e1e6c9153e195a261401ab040e59818aa9b52c8e67403b08e43c10c01dcdd40d2f1d77"
+    },
+    "split-ips": {
+      "apis": [],
+      "capacidades": [],
+      "entrypoint": "scripts/task01_split.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 256
+      },
+      "params": {
+        "texto": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "ips": {
+          "tipo": "list"
+        }
+      },
+      "script_hash": "blake2:cef5f5993a12a9c468c6f2a35ffd262ecf08ed8c50c47c308c1018c7c13247ff1214d612b4ee31c04d1d3f69b256d4cfc0e61a13dc137e47350236ee577c6bde"
+    }
+  },
+  "versao": "0.2"
+}

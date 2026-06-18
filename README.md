@@ -105,6 +105,7 @@ src/myass/
   ops/         provision + nodes + CLI (python -m myass.ops ...)
   storage/     Mongo/GridFS
 bots/bot_cve/  BOT de exemplo (relatório PDF rico de CVEs) — ver seu README
+bots/bot_ip/   BOT de exemplo (IPs de WAN → Shodan + AbuseIPDB → PDF → upload) — ver seu README
 client/web/    Locutus web (PHP + MySQL): SPA + blob store cego + deploy por FTP
 tests/         unittest (191)
 doc/           arquitetura.md, DEPLOY.md, diagramas, análises
