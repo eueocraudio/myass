@@ -5,7 +5,7 @@
       "filhos": [
         {
           "bot_ref": {
-            "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+            "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
             "script_hash": "blake2:1800a2bd9422f57e10282143833418a0cffe67cca72515d23e90e14f5c24e21e1997ad66c28bc660bdefd45e09954a2106ec12a81c6fece26607632d6b32546d"
           },
           "nome": "Task01",
@@ -20,8 +20,8 @@
             "filhos": [
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
-                  "script_hash": "blake2:2e33f09e7cae1089f3c6628f8a50ac242a6d24b7568c77cf0e1e1e7b0b7ee201c5581ce12f94be94e6e3f5200fd43d8f604768ae8b9bff25ed3de4865018adf6"
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
+                  "script_hash": "blake2:0913ad609bf0044a1bb036d8cfc26b8d8e91f5f0a0e239d3f632b8bd5b651b1589b7f127a7010aa4b3937cbeeb2b38d8202ea47b81315d92597e218f0a8ba5f3"
                 },
                 "nome": "Task03",
                 "params": {
@@ -31,7 +31,7 @@
               },
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
                   "script_hash": "blake2:6c6315ea227c1dce8b54b1fa817da6037191279e46987749dcb15f156bd091e26d884fd3967a0675b42d4afbfe13e5d6d9dbe97ef75cf79f0ee31d6c8a688f33"
                 },
                 "nome": "Task04",
@@ -40,7 +40,7 @@
               },
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
                   "script_hash": "blake2:50de15e4caf9b3428089fb596efb1432d4cf5d7f28cd9ebdb65d5c4c74532f8ba73b412931fdf46adf8f4c592622431a9942f598c2d1197f8d42028be2bd9fd7"
                 },
                 "nome": "Task05",
@@ -49,7 +49,7 @@
               },
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
                   "script_hash": "blake2:a2653548837b98c01c032ed0f3de17ca3ee449c658d24a2dcc85658853a19069d93a7fc3204bfc8c3ba179c3bbfdcb4065da5bed0fd731d6684ca9bd39eae850"
                 },
                 "catch": [
@@ -64,8 +64,8 @@
               },
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
-                  "script_hash": "blake2:65884840cee6b2b6bc763ac254e280882bfdf1d10c65063249a18ef1866e87b16d1416c546c2102c9435309201a18cc8dcc6fb6b40f49d95060d7fa600fcf05f"
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
+                  "script_hash": "blake2:ed360fbd6deb1b0dc4243b6b181e597ed85333fe6daf2c4cb4956bb89c8024f048f18dbc51347d5fb514ee3c2a1f58bb1133292f2642854ef081c668589c584e"
                 },
                 "nome": "Task07",
                 "params": "$prev",
@@ -73,7 +73,7 @@
               },
               {
                 "bot_ref": {
-                  "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+                  "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
                   "script_hash": "blake2:a810182e59f4f3649f7073dd45d472db79af823a45c26588c64830bf8cdb67bdf70802b44088ac545866005bb27abcf4634097558e83d5309fe6649c4fbfe198"
                 },
                 "nome": "Task08",
@@ -90,7 +90,7 @@
         },
         {
           "bot_ref": {
-            "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
+            "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
             "script_hash": "blake2:034d1f38cf33510aea6690da6d264583f76cd17b9c224a9503004b1bf2dbbf91922e2ef6bc58dd3fa56a513056b46645eaf21daeb88d1dc4cd43069bddd5bb27"
           },
           "nome": "Task09",
@@ -101,8 +101,8 @@
         },
         {
           "bot_ref": {
-            "project_hash": "blake2:94c2d773fccc502e65bd8fd83e80b856d7a13cbf0c57edf12728b817a25b2b948dcbaff4c1f4035c01e4525a6938bbf81e01f76fa3aeae1dc0677190a2dd595c",
-            "script_hash": "blake2:54a39307bb081e42316d3c8dd426e5686ea188421d2d018c09f21eb89ea947d9f685e7a22d2670bf58435b3192426841a8409afef7fe178f75d6e11306ba5d4e"
+            "project_hash": "blake2:a4d8163f9c17c45f98f09406336dbb9c2c73b4028ed7fec11fceb13b4c0f09c0ce43a7cddab96e2d4b6ac85f7d0f37435a8adf6edac9366c60e80ccc7714f2dc",
+            "script_hash": "blake2:41fa0022252af0531a925c2ff744bd334ef461aaeddf17240c808f40144199cddff6cf70d0d679073d529291c899f5716ab4209dfa31004d251bd77055122289"
           },
           "nome": "Task10",
           "params": "$node.Task09",
@@ -115,5 +115,5 @@
     "tipo": "workflow",
     "versao": "1.0"
   },
-  "template_hash": "blake2:096a6c20ab232589298cfb4f4038d91b87568cf1b071fdf2bc9b7c2122e0049fcb753d488ecec1a53c6b3a1c8c12ad97fb76592be027cdca55c545cd8397b26d"
+  "template_hash": "blake2:c6d1fc3e00b6d3519d6fa4abe75262886ab78a8b8bcb9acd730804d3542c31fc4007ff04579b2c695eaf130124a396460aec70a83070cf1d6536baf0ceff1f9d"
 }

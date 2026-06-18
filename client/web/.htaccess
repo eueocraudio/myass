@@ -2,6 +2,13 @@
 # de blob 64-hex são dinâmicos). Arquivos estáticos (index.html, js/) são servidos
 # direto pelo servidor.
 RewriteEngine On
+
+# SEGURANÇA: bloqueia acesso direto a qualquer dotfile (.env com as credenciais do
+# MySQL, .htaccess etc.) — qualquer componente de caminho começando com ponto → 403.
+# Feito via mod_rewrite (já habilitado) para não depender da versão do Apache
+# (Require all denied vs Order/Deny).
+RewriteRule (^|/)\.(?!well-known/) - [F]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]

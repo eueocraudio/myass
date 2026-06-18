@@ -20,6 +20,7 @@ import threading
 from .. import errlog
 from ..noise import channel as ch
 from ..proto import envelope as E
+from ..workflow.inputs import InputError
 from .scheduler import Scheduler
 
 ROLE_EXECUTOR = "executor"
@@ -141,10 +142,17 @@ class SchedulerServer:
             template = self.registry.get_workflow(h["workflow_hash"])
             if template is None:
                 return E.encode(E.START_ACK, {"erro": "workflow não aprovado"})
-            occ_id = self.engine.start(template, h.get("inputs", {}))
+            try:
+                occ_id = self.engine.start(template, h.get("inputs", {}))
+            except InputError as e:
+                return E.encode(E.START_ACK, {"erro": f"input inválido: {e}"})
             return E.encode(E.START_ACK, {"occurrence_id": occ_id})
         if t == E.LIST_OCCURRENCES:
             return E.encode(E.OCCURRENCES, {"ocorrencias": self.engine.store.recent()})
+        if t == E.OCCURRENCE_GET:
+            info = self.engine.store.detail(h.get("occurrence_id", ""))
+            return E.encode(E.OCCURRENCE_INFO,
+                            info or {"erro": "ocorrência não encontrada"})
         if t == E.ENVIRONMENT:
             return E.encode(E.ENV_INFO, {"blocks": self.scheduler.store.list_inventory()})
         return E.encode(E.DENIED, {"motivo": f"publicador não pode {t}"})

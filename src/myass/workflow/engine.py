@@ -27,6 +27,7 @@ import threading
 import uuid
 
 from .. import errlog
+from .inputs import InputError, validate_inputs  # noqa: F401  (reexport p/ callers)
 from .template import ROOT_PATH, node_at
 
 STATUS_RUNNING = "running"
@@ -45,20 +46,47 @@ class OccurrenceStore:
         self.col.replace_one({"_id": occ["_id"]}, occ, upsert=True)
 
     def recent(self, limit: int = 50) -> list[dict]:
-        """Resumo das ocorrências (para o admin acompanhar execuções)."""
+        """Resumo das ocorrências de topo (para o admin acompanhar execuções).
+        Exclui as internas (``origin == "internal"``, ex.: o workflow do VAI) —
+        só ocorrências iniciadas por um humano aparecem no painel."""
         out = []
-        for d in self.col.find({}, {"status": 1, "result": 1, "fail": 1}).limit(limit):
+        for d in self.col.find({"origin": {"$ne": "internal"}},
+                               {"status": 1, "result": 1, "fail": 1,
+                                "template.nome": 1, "template.versao": 1}).limit(limit):
+            tmpl = d.get("template") or {}
             out.append({"occurrence_id": d["_id"], "status": d["status"],
+                        "workflow": f"{tmpl.get('nome', '?')} v{tmpl.get('versao', '')}".strip(),
                         "result": d.get("result"), "fail": d.get("fail")})
         return out
+
+    def detail(self, occ_id: str) -> dict | None:
+        """Detalhe curado de uma ocorrência (para a tela de informações do admin):
+        status, workflow, inputs, resultado/falha e saídas por nó nomeado. Não
+        expõe o template/frames internos."""
+        d = self.col.find_one({"_id": occ_id})
+        if d is None:
+            return None
+        tmpl = d.get("template") or {}
+        return {
+            "occurrence_id": d["_id"],
+            "status": d.get("status"),
+            "workflow": {"nome": tmpl.get("nome"), "versao": tmpl.get("versao")},
+            "inputs": d.get("inputs"),
+            "result": d.get("result"),
+            "fail": d.get("fail"),
+            "node_outputs": d.get("node_outputs"),
+        }
 
 
 class WorkflowEngine:
     def __init__(self, broker, store: OccurrenceStore, exigencia_for=None,
-                 on_finished=None):
+                 on_finished=None, params_for=None):
         self.broker = broker
         self.store = store
         self.exigencia_for = exigencia_for or (lambda bot_ref: None)
+        # schema de params do script (p/ validar os inputs na partida). Sem ele,
+        # a validação é no-op (não há tipos conhecidos para checar).
+        self.params_for = params_for or (lambda bot_ref: None)
         # Chamado uma vez quando uma ocorrência atinge estado terminal (done/failed)
         # — é o gancho que o núcleo usa para devolver o resultado ao cliente (SET).
         self.on_finished = on_finished
@@ -76,10 +104,18 @@ class WorkflowEngine:
             return self._locks.setdefault(occurrence_id, threading.Lock())
 
     # ---- início -------------------------------------------------------
-    def start(self, template: dict, inputs: dict, occurrence_id: str | None = None) -> str:
+    def start(self, template: dict, inputs: dict, occurrence_id: str | None = None,
+              origin: str = "user") -> str:
+        # valida os inputs contra o schema de tipos derivado do template; um
+        # pedido sem os valores esperados sobe InputError e NÃO cria ocorrência.
+        validate_inputs(template, inputs or {}, self.params_for)
         occ_id = occurrence_id or "occ-" + uuid.uuid4().hex[:12]
         occ = {
+            # origin="user": ocorrência de topo (humana, via painel/web) — aparece
+            # no painel. origin="internal": criada pelo núcleo p/ tratativa (ex.: o
+            # workflow interpretador do VAI) — NÃO aparece no painel.
             "_id": occ_id, "template": template, "status": STATUS_RUNNING,
+            "origin": origin,
             "inputs": inputs, "node_outputs": {}, "result": None, "fail": None,
             "frames": {}, "inflight": {}, "next_fid": 0, "root_fid": None,
         }

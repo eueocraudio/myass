@@ -111,6 +111,18 @@ class PublishRegistry:
                 return m.get("exigencia")
         return None
 
+    def params_for(self, bot_ref: dict) -> dict | None:
+        """Schema de params do script (campo→{tipo,obrigatorio,...}) — alimenta a
+        validação dos inputs na partida da ocorrência."""
+        doc = self.pubs.find_one({"_id": bot_ref.get("project_hash"),
+                                  "tipo": "bot", "status": STATUS_ATIVO})
+        if not doc:
+            return None
+        for m in (doc["conteudo"].get("scripts") or {}).values():
+            if m.get("script_hash") == bot_ref.get("script_hash"):
+                return m.get("params")
+        return None
+
     def catalog(self) -> dict:
         bots, workflows = [], []
         for doc in self.pubs.find({"status": STATUS_ATIVO}):

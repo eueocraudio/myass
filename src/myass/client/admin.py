@@ -78,5 +78,8 @@ class AdminClient:
     def list_occurrences(self) -> list:
         return self._rpc(E.LIST_OCCURRENCES)[1].get("ocorrencias", [])
 
+    def get_occurrence(self, occurrence_id: str) -> dict:
+        return self._rpc(E.OCCURRENCE_GET, {"occurrence_id": occurrence_id})[1]
+
     def environment(self) -> dict:
         return self._rpc(E.ENVIRONMENT)[1]

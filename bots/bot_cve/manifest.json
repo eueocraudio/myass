@@ -23,7 +23,7 @@
           "tipo": "str"
         }
       },
-      "script_hash": "blake2:54a39307bb081e42316d3c8dd426e5686ea188421d2d018c09f21eb89ea947d9f685e7a22d2670bf58435b3192426841a8409afef7fe178f75d6e11306ba5d4e"
+      "script_hash": "blake2:41fa0022252af0531a925c2ff744bd334ef461aaeddf17240c808f40144199cddff6cf70d0d679073d529291c899f5716ab4209dfa31004d251bd77055122289"
     },
     "check-kev": {
       "apis": [
@@ -99,7 +99,7 @@
           "tipo": "list"
         }
       },
-      "script_hash": "blake2:2e33f09e7cae1089f3c6628f8a50ac242a6d24b7568c77cf0e1e1e7b0b7ee201c5581ce12f94be94e6e3f5200fd43d8f604768ae8b9bff25ed3de4865018adf6"
+      "script_hash": "blake2:0913ad609bf0044a1bb036d8cfc26b8d8e91f5f0a0e239d3f632b8bd5b651b1589b7f127a7010aa4b3937cbeeb2b38d8202ea47b81315d92597e218f0a8ba5f3"
     },
     "fetch-refs": {
       "apis": [
@@ -168,7 +168,7 @@
           "tipo": "list"
         }
       },
-      "script_hash": "blake2:65884840cee6b2b6bc763ac254e280882bfdf1d10c65063249a18ef1866e87b16d1416c546c2102c9435309201a18cc8dcc6fb6b40f49d95060d7fa600fcf05f"
+      "script_hash": "blake2:ed360fbd6deb1b0dc4243b6b181e597ed85333fe6daf2c4cb4956bb89c8024f048f18dbc51347d5fb514ee3c2a1f58bb1133292f2642854ef081c668589c584e"
     },
     "save-cve": {
       "apis": [],

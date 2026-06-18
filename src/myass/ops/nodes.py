@@ -42,6 +42,7 @@ class CoreNode:
         self.engine = WorkflowEngine(self.broker, s.occurrences)
         self.registry = PublishRegistry(db, s.blobs)
         self.engine.exigencia_for = self.registry.exigencia_for
+        self.engine.params_for = self.registry.params_for  # valida inputs na partida
         # tick: o resultado de uma atividade avança a ocorrência
         self.scheduler = Scheduler(
             self.broker, s.leases,

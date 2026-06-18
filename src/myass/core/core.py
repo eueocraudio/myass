@@ -18,6 +18,7 @@ from __future__ import annotations
 import threading
 
 from .. import errlog
+from ..workflow.inputs import InputError
 
 
 class ReplyStore:
@@ -74,7 +75,12 @@ class Core:
             self.gateway.send_response(client_id, request_id,
                                        {"erro": "workflow não aprovado"})
             return None
-        occ_id = self.engine.start(template, inputs)
+        try:
+            occ_id = self.engine.start(template, inputs)
+        except InputError as e:
+            self.gateway.send_response(client_id, request_id,
+                                       {"erro": f"input inválido: {e}"})
+            return None
         self.replies.put(occ_id, client_id, request_id, kind=kind)
         occ = self.engine.store.get(occ_id)  # write-once: só respondemos no fim
         if occ and occ["status"] != "running":
@@ -96,7 +102,8 @@ class Core:
             return
         inputs = {"texto": texto,
                   "catalogo": self.registry.catalog().get("workflows", [])}
-        occ_id = self.engine.start(template, inputs)
+        # ocorrência interna (interpretação): não aparece no painel de ocorrências.
+        occ_id = self.engine.start(template, inputs, origin="internal")
         self.replies.put(occ_id, client_id, request_id, kind="interpret")
 
     # ---- saída: ocorrência concluída (→ SET) --------------------------

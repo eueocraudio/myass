@@ -9,3 +9,11 @@ venv/
 # local runtime artifacts
 /data/
 *.pem
+
+# secrets (credenciais de banco/FTP do Locutus web etc.) — nunca comitar
+.env
+**/.env
+
+# provisão do quadrante: configs com chaves privadas (scheduler/drones/admins/
+# segredos de cliente) — distribuir out-of-band, nunca comitar
+/quadrante/

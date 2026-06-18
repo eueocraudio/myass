@@ -1,0 +1,2568 @@
+{
+ "CWE-1021": [
+  {
+   "id": "T1036.004",
+   "name": "Masquerading: Masquerade Task or Service"
+  },
+  {
+   "id": "T1056",
+   "name": "Input Capture"
+  },
+  {
+   "id": "T1548.004",
+   "name": "Abuse Elevation Control Mechanism: Elevated Execution with Prompt"
+  }
+ ],
+ "CWE-113": [
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-114": [
+  {
+   "id": "T1505.005",
+   "name": "Server Software Component: Terminal Services DLL"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow: Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.013",
+   "name": "Hijack Execution Flow: KernelCallbackTable"
+  },
+  {
+   "id": "T1620",
+   "name": "Reflective Code Loading"
+  }
+ ],
+ "CWE-117": [
+  {
+   "id": "T1070",
+   "name": "Indicator Removal on Host"
+  },
+  {
+   "id": "T1562.002",
+   "name": "Impair Defenses: Disable Windows Event Logging"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses: Impair Command History Logging"
+  },
+  {
+   "id": "T1562.008",
+   "name": "Impair Defenses: Disable Cloud Logs"
+  }
+ ],
+ "CWE-1188": [
+  {
+   "id": "T1211",
+   "name": "Exploitation for Defensive Evasion"
+  },
+  {
+   "id": "T1542.002",
+   "name": "Pre-OS Boot: Component Firmware"
+  },
+  {
+   "id": "T1556",
+   "name": "Modify Authentication Process"
+  }
+ ],
+ "CWE-1190": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weaknesses"
+  }
+ ],
+ "CWE-1191": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1193": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1220": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1239": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-1243": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  }
+ ],
+ "CWE-1244": [
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  }
+ ],
+ "CWE-1258": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-1264": [
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  }
+ ],
+ "CWE-1266": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1052",
+   "name": "Exfiltration Over Physical Medium"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-1268": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weaknesses"
+  }
+ ],
+ "CWE-1269": [
+  {
+   "id": "T1195",
+   "name": "Supply Chain Compromise"
+  }
+ ],
+ "CWE-1270": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  }
+ ],
+ "CWE-1272": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-1273": [
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  }
+ ],
+ "CWE-1278": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  }
+ ],
+ "CWE-1280": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weaknesses"
+  }
+ ],
+ "CWE-1297": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1299": [
+  {
+   "id": "T1091",
+   "name": "Replication Through Removable Media"
+  },
+  {
+   "id": "T1092",
+   "name": "Communication Through Removable Media"
+  }
+ ],
+ "CWE-1301": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-1311": [
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1314": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1315": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1317": [
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  }
+ ],
+ "CWE-1318": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1320": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1321": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1322": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-1323": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-1325": [
+  {
+   "id": "T1499.003",
+   "name": "Endpoint Denial of Service:Application Exhaustion Flood"
+  }
+ ],
+ "CWE-1326": [
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  }
+ ],
+ "CWE-1327": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-1330": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1555.001",
+   "name": "Credentials from Password Stores:Keychain"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-15": [
+  {
+   "id": "T1112",
+   "name": "Modify Registry"
+  },
+  {
+   "id": "T1547.001",
+   "name": "Boot or Logon Autostart Execution: Registry Run Keys / Start Folder"
+  },
+  {
+   "id": "T1547.004",
+   "name": "Boot or Logon Autostart Execution: Winlogon helper DLL"
+  },
+  {
+   "id": "T1547.014",
+   "name": "Boot or Logon Autostart Execution: Active"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  },
+  {
+   "id": "T1647",
+   "name": "Plist Modification"
+  }
+ ],
+ "CWE-162": [
+  {
+   "id": "T1036.007",
+   "name": "Masquerading: Double File Extension"
+  }
+ ],
+ "CWE-172": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-173": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-180": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-181": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-20": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  },
+  {
+   "id": "T1036.001",
+   "name": "Masquerading: Invalid Code Signature"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  }
+ ],
+ "CWE-200": [
+  {
+   "id": "T1007",
+   "name": "System Service Discovery"
+  },
+  {
+   "id": "T1016",
+   "name": "System Network Configuration Discovery"
+  },
+  {
+   "id": "T1018",
+   "name": "Remote System Discovery"
+  },
+  {
+   "id": "T1033",
+   "name": "System Owner/User Discovery"
+  },
+  {
+   "id": "T1036.005",
+   "name": "Masquerading: Match Legitimate Name or Location"
+  },
+  {
+   "id": "T1046",
+   "name": "Network Service Scanning"
+  },
+  {
+   "id": "T1049",
+   "name": "System Network Connections Discovery"
+  },
+  {
+   "id": "T1057",
+   "name": "Process Discovery"
+  },
+  {
+   "id": "T1069",
+   "name": "Permission Groups Discovery"
+  },
+  {
+   "id": "T1082",
+   "name": "System Information Discovery"
+  },
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1087",
+   "name": "Account Discovery"
+  },
+  {
+   "id": "T1111",
+   "name": "Multi-Factor Authentication Interception"
+  },
+  {
+   "id": "T1120",
+   "name": "Peripheral Device Discovery"
+  },
+  {
+   "id": "T1124",
+   "name": "System Time Discovery"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1135",
+   "name": "Network Share Discovery"
+  },
+  {
+   "id": "T1217",
+   "name": "Browser Bookmark Discovery"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  },
+  {
+   "id": "T1590",
+   "name": "Gather Victim Network Information"
+  },
+  {
+   "id": "T1592",
+   "name": "Gather Victim Host Information"
+  },
+  {
+   "id": "T1595",
+   "name": "Active Scanning"
+  },
+  {
+   "id": "T1615",
+   "name": "Group Policy Discovery"
+  }
+ ],
+ "CWE-204": [
+  {
+   "id": "T1082",
+   "name": "System Information Discovery"
+  },
+  {
+   "id": "T1592.002",
+   "name": "Gather Victim Host Information: Software"
+  }
+ ],
+ "CWE-205": [
+  {
+   "id": "T1082",
+   "name": "System Information Discovery"
+  },
+  {
+   "id": "T1592.002",
+   "name": "Gather Victim Host Information: Software"
+  }
+ ],
+ "CWE-208": [
+  {
+   "id": "T1082",
+   "name": "System Information Discovery"
+  },
+  {
+   "id": "T1592.002",
+   "name": "Gather Victim Host Information: Software"
+  }
+ ],
+ "CWE-226": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-257": [
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  }
+ ],
+ "CWE-261": [
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  }
+ ],
+ "CWE-262": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-263": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-267": [
+  {
+   "id": "T1113",
+   "name": "Screen Capture"
+  },
+  {
+   "id": "T1115",
+   "name": "Clipboard Data"
+  },
+  {
+   "id": "T1123",
+   "name": "Audio Capture"
+  },
+  {
+   "id": "T1125",
+   "name": "Video Capture"
+  },
+  {
+   "id": "T1135",
+   "name": "Network Share Discovery"
+  },
+  {
+   "id": "T1513",
+   "name": "Screen Capture"
+  }
+ ],
+ "CWE-269": [
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  }
+ ],
+ "CWE-270": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1055.003",
+   "name": "Process Injection: Thread Execution Hijacking"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weakness"
+  }
+ ],
+ "CWE-272": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weakness"
+  }
+ ],
+ "CWE-276": [
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-282": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weakness"
+  }
+ ],
+ "CWE-284": [
+  {
+   "id": "T1014",
+   "name": "Rootkit"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1037",
+   "name": "Boot or Logon Initialization Scripts"
+  },
+  {
+   "id": "T1080",
+   "name": "Taint shared content"
+  },
+  {
+   "id": "T1505.005",
+   "name": "Server Software Component: Terminal Services DLL"
+  },
+  {
+   "id": "T1542.003",
+   "name": "Pre-OS Boot:Bootkit"
+  },
+  {
+   "id": "T1543",
+   "name": "Create or Modify System Process"
+  },
+  {
+   "id": "T1543.001",
+   "name": "Create or Modify System Process: Launch Agent"
+  },
+  {
+   "id": "T1543.003",
+   "name": "Create or Modify System Process:Windows Service"
+  },
+  {
+   "id": "T1543.004",
+   "name": "Create or Modify System Process: Launch Daemon"
+  },
+  {
+   "id": "T1546.001",
+   "name": "Event Triggered Execution:Change Default File Association"
+  },
+  {
+   "id": "T1546.004",
+   "name": "Event Triggered Execution:.bash_profile and .bashrc"
+  },
+  {
+   "id": "T1546.008",
+   "name": "Event Triggered Execution: Accessibility Features"
+  },
+  {
+   "id": "T1546.016",
+   "name": "Event Triggered Execution: Installer Packages"
+  },
+  {
+   "id": "T1547",
+   "name": "Boot or Logon Autostart Execution"
+  },
+  {
+   "id": "T1547.006",
+   "name": "Boot or Logon Autostart Execution:Kernel Modules and Extensions"
+  },
+  {
+   "id": "T1553.004",
+   "name": "Subvert Trust Controls:Install Root Certificate"
+  },
+  {
+   "id": "T1556.006",
+   "name": "Modify Authentication Process: Multi-Factor Authentication"
+  },
+  {
+   "id": "T1562.001",
+   "name": "Impair Defenses: Disable or Modify Tools"
+  },
+  {
+   "id": "T1562.002",
+   "name": "Impair Defenses: Disable Windows Event Logging"
+  },
+  {
+   "id": "T1562.004",
+   "name": "Impair Defenses: Disable or Modify System Firewall"
+  },
+  {
+   "id": "T1562.007",
+   "name": "Impair Defenses: Disable or Modify Cloud Firewall"
+  },
+  {
+   "id": "T1562.008",
+   "name": "Impair Defenses: Disable Cloud Logs"
+  },
+  {
+   "id": "T1562.009",
+   "name": "Impair Defenses: Safe Mode Boot"
+  },
+  {
+   "id": "T1574.011",
+   "name": "Hijack Execution Flow:Service Registry Permissions Weakness"
+  }
+ ],
+ "CWE-285": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1012",
+   "name": "Query Registry"
+  },
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1552.002",
+   "name": "Unsecured Credentials: Credentials in Registry"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1565.002",
+   "name": "Data Manipulation: Transmitted Data Manipulation"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-287": [
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1185",
+   "name": "Browser Session Hijacking"
+  },
+  {
+   "id": "T1505.003",
+   "name": "Server Software Component:Web Shell"
+  },
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  },
+  {
+   "id": "T1550.001",
+   "name": "Use Alternate Authentication Material:Application Access Token"
+  },
+  {
+   "id": "T1557",
+   "name": "Adversary-in-the-Middle"
+  },
+  {
+   "id": "T1563",
+   "name": "Remote Service Session Hijacking"
+  }
+ ],
+ "CWE-288": [
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1211",
+   "name": "Exploitation for Defensive Evasion"
+  },
+  {
+   "id": "T1542.002",
+   "name": "Pre-OS Boot: Component Firmware"
+  },
+  {
+   "id": "T1556",
+   "name": "Modify Authentication Process"
+  }
+ ],
+ "CWE-290": [
+  {
+   "id": "T1036.001",
+   "name": "Masquerading: Invalid Code Signature"
+  },
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  },
+  {
+   "id": "T1557",
+   "name": "Adversary-in-the-Middle"
+  }
+ ],
+ "CWE-294": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1550.002",
+   "name": "Use Alternate Authentication Material:Pass The Hash"
+  },
+  {
+   "id": "T1550.003",
+   "name": "Use Alternate Authentication Material:Pass The Ticket"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1557",
+   "name": "Adversary-in-the-Middle"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-300": [
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1185",
+   "name": "Man in the Browser"
+  },
+  {
+   "id": "T1557",
+   "name": "Adversary-in-the-Middle"
+  }
+ ],
+ "CWE-302": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  }
+ ],
+ "CWE-307": [
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  }
+ ],
+ "CWE-308": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1550.002",
+   "name": "Use Alternate Authentication Material:Pass The Hash"
+  },
+  {
+   "id": "T1550.003",
+   "name": "Use Alternate Authentication Material:Pass The Ticket"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-309": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-311": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1056.004",
+   "name": "Input Capture: Credential API Hooking"
+  },
+  {
+   "id": "T1111",
+   "name": "Multi-Factor Authentication Interception"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-312": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-314": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-315": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-318": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-319": [
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1056.004",
+   "name": "Input Capture: Credential API Hooking"
+  }
+ ],
+ "CWE-325": [
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  }
+ ],
+ "CWE-326": [
+  {
+   "id": "T1110",
+   "name": "Brute Force"
+  }
+ ],
+ "CWE-327": [
+  {
+   "id": "T1036.001",
+   "name": "Masquerading: Invalid Code Signature"
+  },
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  }
+ ],
+ "CWE-328": [
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls: Code Signing"
+  }
+ ],
+ "CWE-330": [
+  {
+   "id": "T1110",
+   "name": "Brute Force"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecure Credentials: Private Keys"
+  }
+ ],
+ "CWE-345": [
+  {
+   "id": "T1211",
+   "name": "Exploitation for Defensive Evasion"
+  },
+  {
+   "id": "T1491",
+   "name": "Defacement"
+  },
+  {
+   "id": "T1542.002",
+   "name": "Pre-OS Boot: Component Firmware"
+  },
+  {
+   "id": "T1556",
+   "name": "Modify Authentication Process"
+  },
+  {
+   "id": "T1557.002",
+   "name": "Adversary-in-the-Middle: ARP Cache Poisoning"
+  },
+  {
+   "id": "T1584.002",
+   "name": "Compromise Infrastructure: DNS Server"
+  }
+ ],
+ "CWE-346": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1557.002",
+   "name": "Adversary-in-the-Middle: ARP Cache Poisoning"
+  },
+  {
+   "id": "T1584.002",
+   "name": "Compromise Infrastructure: DNS Server"
+  }
+ ],
+ "CWE-348": [
+  {
+   "id": "T1557.002",
+   "name": "Adversary-in-the-Middle: ARP Cache Poisoning"
+  },
+  {
+   "id": "T1584.002",
+   "name": "Compromise Infrastructure: DNS Server"
+  }
+ ],
+ "CWE-349": [
+  {
+   "id": "T1557.002",
+   "name": "Adversary-in-the-Middle: ARP Cache Poisoning"
+  },
+  {
+   "id": "T1584.002",
+   "name": "Compromise Infrastructure: DNS Server"
+  }
+ ],
+ "CWE-350": [
+  {
+   "id": "T1584.002",
+   "name": "Compromise Infrastructure: DNS Server"
+  }
+ ],
+ "CWE-353": [
+  {
+   "id": "T1211",
+   "name": "Exploitation for Defensive Evasion"
+  },
+  {
+   "id": "T1542.002",
+   "name": "Pre-OS Boot: Component Firmware"
+  },
+  {
+   "id": "T1556",
+   "name": "Modify Authentication Process"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  }
+ ],
+ "CWE-359": [
+  {
+   "id": "T1606.001",
+   "name": "Forge Web Credentials: Web Cookies"
+  }
+ ],
+ "CWE-384": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1134.002",
+   "name": "Access Token Manipulation: Create Process with Token"
+  },
+  {
+   "id": "T1134.003",
+   "name": "Access Token Manipulation: Make and Impersonate Token"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1606",
+   "name": "Forge Web Credentials"
+  }
+ ],
+ "CWE-400": [
+  {
+   "id": "T1499",
+   "name": "Endpoint Denial of Service"
+  }
+ ],
+ "CWE-404": [
+  {
+   "id": "T1498.001",
+   "name": "Network Denial of Service: Direct Network Flood"
+  },
+  {
+   "id": "T1499",
+   "name": "Endpoint Denial of Service"
+  },
+  {
+   "id": "T1499.001",
+   "name": "Endpoint Denial of Service: OS Exhaustion Flood"
+  },
+  {
+   "id": "T1499.003",
+   "name": "Endpoint Denial of Service:Application Exhaustion Flood"
+  }
+ ],
+ "CWE-412": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-419": [
+  {
+   "id": "T1056.004",
+   "name": "Input Capture: Credential API Hooking"
+  }
+ ],
+ "CWE-424": [
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  }
+ ],
+ "CWE-425": [
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1565.002",
+   "name": "Data Manipulation: Transmitted Data Manipulation"
+  }
+ ],
+ "CWE-426": [
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow: Path Interception by PATH Environment Variable"
+  },
+  {
+   "id": "T1574.009",
+   "name": "Hijack Execution Flow: Path Interception by Unquoted Path"
+  }
+ ],
+ "CWE-427": [
+  {
+   "id": "T1574.001",
+   "name": "Hijack Execution Flow:DLL search order hijacking"
+  },
+  {
+   "id": "T1574.004",
+   "name": "Hijack Execution Flow: Dylib Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow: Path Interception by PATH Environment Variable"
+  },
+  {
+   "id": "T1574.008",
+   "name": "Hijack Execution Flow: Path Interception by Search Order Hijacking"
+  },
+  {
+   "id": "T1574.009",
+   "name": "Hijack Execution Flow: Path Interception by Unquoted Path"
+  }
+ ],
+ "CWE-430": [
+  {
+   "id": "T1036.006",
+   "name": "Masquerading: Space after Filename"
+  }
+ ],
+ "CWE-434": [
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-441": [
+  {
+   "id": "T1090.001",
+   "name": "Proxy: Internal Proxy"
+  }
+ ],
+ "CWE-451": [
+  {
+   "id": "T1534",
+   "name": "Internal Spearfishing"
+  },
+  {
+   "id": "T1566",
+   "name": "Phishing"
+  },
+  {
+   "id": "T1566.001",
+   "name": "Phishing: Spearfishing Attachment"
+  },
+  {
+   "id": "T1566.002",
+   "name": "Phishing: Spearfishing Link"
+  },
+  {
+   "id": "T1566.003",
+   "name": "Phishing: Spearfishing via Service"
+  },
+  {
+   "id": "T1598",
+   "name": "Phishing for Information"
+  },
+  {
+   "id": "T1598.001",
+   "name": "Phishing for Information: Spearfishing Service"
+  },
+  {
+   "id": "T1598.002",
+   "name": "Phishing for Information: Spearfishing Attachment"
+  },
+  {
+   "id": "T1598.003",
+   "name": "Phishing for Information: Spearfishing Link"
+  }
+ ],
+ "CWE-46": [
+  {
+   "id": "T1036.006",
+   "name": "Masquerading:Space after Filename"
+  }
+ ],
+ "CWE-472": [
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-488": [
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  }
+ ],
+ "CWE-494": [
+  {
+   "id": "T1072",
+   "name": "Software Deployment Tools"
+  },
+  {
+   "id": "T1185",
+   "name": "Man in the Browser"
+  },
+  {
+   "id": "T1195.001",
+   "name": "Supply Chain Compromise: Software Dependencies and Development Tools"
+  },
+  {
+   "id": "T1195.002",
+   "name": "Supply Chain Compromise: Compromise Software Supply Chain"
+  }
+ ],
+ "CWE-497": [
+  {
+   "id": "T1614",
+   "name": "System Language Discovery"
+  }
+ ],
+ "CWE-506": [
+  {
+   "id": "T1001.002",
+   "name": "Data Obfuscation: Steganography"
+  },
+  {
+   "id": "T1027.003",
+   "name": "Obfuscated Files or Information: Steganography"
+  },
+  {
+   "id": "T1027.004",
+   "name": "Obfuscated Files or Information: Compile After Delivery"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1195.001",
+   "name": "Supply Chain Compromise: Compromise Software Dependencies and Development Tools"
+  },
+  {
+   "id": "T1195.002",
+   "name": "Supply Chain Compromise: Compromise Software Supply Chain"
+  },
+  {
+   "id": "T1218.001",
+   "name": "Signed Binary Proxy Execution: Compiled HTML File"
+  },
+  {
+   "id": "T1221",
+   "name": "Template Injection"
+  }
+ ],
+ "CWE-507": [
+  {
+   "id": "T1176",
+   "name": "Browser Extensions"
+  },
+  {
+   "id": "T1505.004",
+   "name": "Server Software Component: IIS Components"
+  }
+ ],
+ "CWE-521": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110",
+   "name": "Brute Force"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-522": [
+  {
+   "id": "T1021",
+   "name": "Remote Services"
+  },
+  {
+   "id": "T1021.002",
+   "name": "Remote Services:SMB/Windows Admin Shares"
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1114.002",
+   "name": "Email Collection:Remote Email Collection"
+  },
+  {
+   "id": "T1133",
+   "name": "External Remote Services"
+  },
+  {
+   "id": "T1543",
+   "name": "Create or Modify System Process"
+  },
+  {
+   "id": "T1550.002",
+   "name": "Use Alternate Authentication Material:Pass The Hash"
+  },
+  {
+   "id": "T1550.003",
+   "name": "Use Alternate Authentication Material:Pass The Ticket"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  },
+  {
+   "id": "T1558.003",
+   "name": "Steal or Forge Kerberos Tickets:Kerberoasting"
+  }
+ ],
+ "CWE-524": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  }
+ ],
+ "CWE-525": [
+  {
+   "id": "T1005",
+   "name": "Data from Local System"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  }
+ ],
+ "CWE-539": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  }
+ ],
+ "CWE-552": [
+  {
+   "id": "T1003",
+   "name": "OS Credential Dumping"
+  },
+  {
+   "id": "T1039",
+   "name": "Data from Network Shared Drive"
+  },
+  {
+   "id": "T1119",
+   "name": "Automated Collection"
+  },
+  {
+   "id": "T1213",
+   "name": "Data from Information Repositories"
+  },
+  {
+   "id": "T1530",
+   "name": "Data from Cloud Storage Object"
+  },
+  {
+   "id": "T1552.001",
+   "name": "Unsecured Credentials: Credentials in Files"
+  },
+  {
+   "id": "T1552.003",
+   "name": "Unsecured Credentials: Bash History"
+  },
+  {
+   "id": "T1552.004",
+   "name": "Unsecured Credentials: Private Keys"
+  },
+  {
+   "id": "T1552.006",
+   "name": "Unsecured Credentials: Group Policy Preferences"
+  },
+  {
+   "id": "T1555",
+   "name": "Credentials from Password Stores"
+  },
+  {
+   "id": "T1602",
+   "name": "Data from Configuration Repository"
+  }
+ ],
+ "CWE-553": [
+  {
+   "id": "T1505.003",
+   "name": "Server Software Component:Web Shell"
+  }
+ ],
+ "CWE-565": [
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-567": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-59": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1547.009",
+   "name": "Boot or Logon Autostart Execution:Shortcut Modification"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: Services File Permissions Weakness"
+  }
+ ],
+ "CWE-593": [
+  {
+   "id": "T1557",
+   "name": "Adversary-in-the-Middle"
+  }
+ ],
+ "CWE-6": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-602": [
+  {
+   "id": "T1056.004",
+   "name": "Input Capture: Credential API Hooking"
+  },
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-642": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  }
+ ],
+ "CWE-645": [
+  {
+   "id": "T1531",
+   "name": "Account Access Removal"
+  }
+ ],
+ "CWE-654": [
+  {
+   "id": "T1078",
+   "name": "Valid Accounts"
+  },
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1110.001",
+   "name": "Brute Force:Password Guessing"
+  },
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  },
+  {
+   "id": "T1110.003",
+   "name": "Brute Force:Password Spraying"
+  },
+  {
+   "id": "T1110.004",
+   "name": "Brute Force:Credential Stuffing"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  }
+ ],
+ "CWE-662": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-664": [
+  {
+   "id": "T1134",
+   "name": "Access Token Manipulation"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1134.002",
+   "name": "Access Token Manipulation: Create Process with Token"
+  },
+  {
+   "id": "T1134.003",
+   "name": "Access Token Manipulation: Make and Impersonate Token"
+  },
+  {
+   "id": "T1528",
+   "name": "Steal Application Access Token"
+  },
+  {
+   "id": "T1539",
+   "name": "Steal Web Session Cookie"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1606",
+   "name": "Forge Web Credentials"
+  }
+ ],
+ "CWE-667": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-692": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-693": [
+  {
+   "id": "T1040",
+   "name": "Network Sniffing"
+  },
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1565.002",
+   "name": "Data Manipulation: Transmitted Data Manipulation"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  },
+  {
+   "id": "T1611",
+   "name": "Escape to Host"
+  }
+ ],
+ "CWE-697": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  }
+ ],
+ "CWE-706": [
+  {
+   "id": "T1036",
+   "name": "Masquerading"
+  },
+  {
+   "id": "T1574.002",
+   "name": "Hijack Execution Flow:DLL Side-Loading"
+  },
+  {
+   "id": "T1574.008",
+   "name": "Hijack Execution Flow:Path Interception by Search Order Hijacking"
+  }
+ ],
+ "CWE-73": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  }
+ ],
+ "CWE-732": [
+  {
+   "id": "T1083",
+   "name": "File and Directory Discovery"
+  },
+  {
+   "id": "T1134.001",
+   "name": "Access Token Manipulation:Token Impersonation/Theft"
+  },
+  {
+   "id": "T1505.005",
+   "name": "Server Software Component: Terminal Services DLL"
+  },
+  {
+   "id": "T1548",
+   "name": "Abuse Elevation Control Mechanism"
+  },
+  {
+   "id": "T1550.004",
+   "name": "Use Alternate Authentication Material:Web Session Cookie"
+  },
+  {
+   "id": "T1553.002",
+   "name": "Subvert Trust Controls:Code Signing"
+  },
+  {
+   "id": "T1554",
+   "name": "Compromise Client Software Binary"
+  },
+  {
+   "id": "T1574.005",
+   "name": "Hijack Execution Flow: Executable Installer File Permissions Weakness"
+  },
+  {
+   "id": "T1574.010",
+   "name": "Hijack Execution Flow: ServicesFile Permissions Weakness"
+  }
+ ],
+ "CWE-74": [
+  {
+   "id": "T1027",
+   "name": "Obfuscated Files or Information"
+  },
+  {
+   "id": "T1562.003",
+   "name": "Impair Defenses:Impair Command History Logging"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow:Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.007",
+   "name": "Hijack Execution Flow:Path Interception by PATH Environment Variable"
+  }
+ ],
+ "CWE-757": [
+  {
+   "id": "T1600",
+   "name": "Weaken Encryption"
+  }
+ ],
+ "CWE-770": [
+  {
+   "id": "T1498.001",
+   "name": "Network Denial of Service: Direct Network Flood"
+  },
+  {
+   "id": "T1498.002",
+   "name": "Network Denial of Service:Reflection Amplification"
+  },
+  {
+   "id": "T1499",
+   "name": "Endpoint Denial of Service"
+  },
+  {
+   "id": "T1499.001",
+   "name": "Endpoint Denial of Service: OS Exhaustion Flood"
+  },
+  {
+   "id": "T1499.002",
+   "name": "Endpoint Denial of Service: Service Exhaustion Flood"
+  },
+  {
+   "id": "T1499.003",
+   "name": "Endpoint Denial of Service:Application Exhaustion Flood"
+  }
+ ],
+ "CWE-772": [
+  {
+   "id": "T1499.002",
+   "name": "Endpoint Denial of Service: Service Exhaustion Flood"
+  }
+ ],
+ "CWE-798": [
+  {
+   "id": "T1078.001",
+   "name": "Valid Accounts:Default Accounts"
+  },
+  {
+   "id": "T1552.001",
+   "name": "Unsecured Credentials:Credentials in files"
+  }
+ ],
+ "CWE-829": [
+  {
+   "id": "T1055",
+   "name": "Process Injection"
+  },
+  {
+   "id": "T1176",
+   "name": "Browser Extensions"
+  },
+  {
+   "id": "T1195.001",
+   "name": "Supply Chain Compromise: Software Dependencies and Development Tools"
+  },
+  {
+   "id": "T1505.004",
+   "name": "Server Software Component: IIS Components"
+  },
+  {
+   "id": "T1505.005",
+   "name": "Server Software Component: Terminal Services DLL"
+  },
+  {
+   "id": "T1574.006",
+   "name": "Hijack Execution Flow: Dynamic Linker Hijacking"
+  },
+  {
+   "id": "T1574.013",
+   "name": "Hijack Execution Flow: KernelCallbackTable"
+  },
+  {
+   "id": "T1620",
+   "name": "Reflective Code Loading"
+  }
+ ],
+ "CWE-833": [
+  {
+   "id": "T1499.004",
+   "name": "Endpoint Denial of Service: Application or System Exploitation"
+  }
+ ],
+ "CWE-836": [
+  {
+   "id": "T1550.002",
+   "name": "Use Alternate Authentication Material:Pass The Hash"
+  },
+  {
+   "id": "T1558",
+   "name": "Steal or Forge Kerberos Tickets"
+  }
+ ],
+ "CWE-862": [
+  {
+   "id": "T1211",
+   "name": "Exploitation for Defensive Evasion"
+  },
+  {
+   "id": "T1542.002",
+   "name": "Pre-OS Boot: Component Firmware"
+  },
+  {
+   "id": "T1556",
+   "name": "Modify Authentication Process"
+  }
+ ],
+ "CWE-916": [
+  {
+   "id": "T1110.002",
+   "name": "Brute Force:Password Cracking"
+  }
+ ],
+ "CWE-923": [
+  {
+   "id": "T1090.004",
+   "name": "Proxy:Domain Fronting"
+  },
+  {
+   "id": "T1557.003",
+   "name": "Adversary-in-the-Middle: DHCP Spoofing"
+  }
+ ],
+ "CWE-94": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  }
+ ],
+ "CWE-95": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  }
+ ],
+ "CWE-96": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  }
+ ],
+ "CWE-97": [
+  {
+   "id": "T1027.006",
+   "name": "Obfuscated Files or Information: HTML Smuggling"
+  },
+  {
+   "id": "T1027.009",
+   "name": "Obfuscated Files or Information: Embedded Payloads"
+  },
+  {
+   "id": "T1564.009",
+   "name": "Hide Artifacts: Resource Forking"
+  }
+ ]
+}

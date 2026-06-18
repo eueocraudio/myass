@@ -85,6 +85,16 @@ class EngineTestBase(unittest.TestCase):
             self.assertLess(guard, 1000, "loop infinito")
 
 
+class TestOriginFilter(EngineTestBase):
+    def test_internal_occurrences_hidden_from_recent(self):
+        # ocorrência de topo (humana) aparece; interna (ex.: VAI) não.
+        u = self.engine.start(wf(), {}, origin="user")
+        i = self.engine.start(wf(), {}, origin="internal")
+        ids = [o["occurrence_id"] for o in self.engine.store.recent()]
+        self.assertIn(u, ids)
+        self.assertNotIn(i, ids)
+
+
 class TestLinear(EngineTestBase):
     def test_block_sequence_and_prev(self):
         t = wf(action("A", "A", {"x": 1}), action("B", "B", "$prev"))

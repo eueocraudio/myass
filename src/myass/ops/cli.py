@@ -112,7 +112,9 @@ def cmd_admin(a):
             from ..executor import project as proj
             print(client.publish_bot(proj.pack(a.arg)))
         elif a.action == "publish-workflow":
-            print(client.publish_workflow(_read(a.arg)))
+            wf = _read(a.arg)
+            # workflow.json é {"template_hash", "template"}; publica-se o template.
+            print(client.publish_workflow(wf.get("template", wf)))
         elif a.action == "start":
             inputs = json.loads(a.arg2) if a.arg2 else {}
             print(client.start_occurrence(a.arg, inputs))
