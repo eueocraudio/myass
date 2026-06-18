@@ -19,7 +19,7 @@ from typing import Protocol
 
 
 class LocutusStore(Protocol):
-    def get(self, addr: str) -> bytes | None: ...
+    def get(self, addr: str, wait: int = 0) -> bytes | None: ...
     def put(self, addr: str, blob: bytes) -> None: ...
     def delete(self, addr: str) -> None: ...
 
@@ -31,8 +31,8 @@ class MemoryLocutus:
         self._d: dict[str, bytes] = {}
         self._lock = threading.Lock()
 
-    def get(self, addr: str) -> bytes | None:
-        with self._lock:
+    def get(self, addr: str, wait: int = 0) -> bytes | None:
+        with self._lock:                              # em memória não há long-poll
             return self._d.get(addr)
 
     def put(self, addr: str, blob: bytes) -> None:
@@ -61,10 +61,14 @@ class HttpLocutus:
     def _url(self, addr: str) -> str:
         return f"{self.base}/{addr}"
 
-    def get(self, addr: str) -> bytes | None:
-        req = urllib.request.Request(self._url(addr), method="GET")
+    def get(self, addr: str, wait: int = 0) -> bytes | None:
+        # ``wait>0`` => long-poll (?wait=N): o servidor segura a conexão até o blob
+        # aparecer ou N s. Corta a taxa de conexões (o GET não martela a cada 15s).
+        url = self._url(addr) + (f"?wait={int(wait)}" if wait else "")
+        timeout = max(self.timeout, wait + 8) if wait else self.timeout
+        req = urllib.request.Request(url, method="GET")
         try:
-            with self._opener.open(req, timeout=self.timeout) as resp:
+            with self._opener.open(req, timeout=timeout) as resp:
                 return resp.read()
         except urllib.error.HTTPError as e:
             if e.code == 404:

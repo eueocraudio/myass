@@ -66,7 +66,14 @@ def cmd_core(a):
         # (ver ops/provision para incluir client-auth); aqui publicamos sem auth
         # de descritor se não fornecidas (o Noise KKpsk0 ainda protege).
         onion = OnionService(cfg["port"], control_port=a.control_port)
-    port = core.start(run_loops=True)
+    # GET do Locutus: por padrão usa LONG-POLL (poll_wait=20s) — o servidor segura
+    # a conexão até chegar pedido, então o núcleo mantém ~1 conexão por janela de
+    # 20s em vez de martelar o MySQL (evita o ban por conexões/hora do host). Sem
+    # long-poll (poll_wait=0), cai no polling por poll_interval. reap é interno.
+    port = core.start(run_loops=True,
+                      reap_interval=float(cfg.get("reap_interval", 30.0)),
+                      poll_interval=float(cfg.get("poll_interval", 15.0)),
+                      poll_wait=int(cfg.get("poll_wait", 20)))
     msg = f"núcleo no ar em {cfg['host']}:{port}"
     if onion:
         onion.__enter__()

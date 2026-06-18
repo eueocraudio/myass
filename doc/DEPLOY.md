@@ -1,11 +1,25 @@
 # Deploy / Operação — rodar um quadrante (e a malha) sobre infra real
 
-A **lógica** está completa e testada em código (`tests/`, 171 testes) e já foi
+A **lógica** está completa e testada em código (`tests/`, **191 testes**) e já foi
 **comprovadamente executada sobre infra real** (ver `examples/run_real_quadrant.py`).
 Este guia cobre subir os serviços e fiar os processos. Tudo em Python; sem
 containers.
 
-## 0. Instalar
+## 0. Turnkey (recomendado)
+
+Um comando pergunta os dados, grava no `~/.env`, **testa serviços/acesso** e só
+então instala (núcleo+drone, admin+`madmin`, web):
+
+```bash
+python3 terraform.py
+```
+
+Ou por partes (idempotentes, **auto-provisionam**): `./install_quadrant.sh`
+(núcleo+drone+mongo+tor) e `./install_admin.sh` (painel + comando `madmin`). Ver
+`install_quadrant.md` / `install_admin.md`. O restante deste guia é a operação
+**manual** equivalente.
+
+## 0b. Instalar (dev / manual)
 
 ```bash
 ./install.sh            # apt: tor, MongoDB, MariaDB+PHP, Qt; pip3: o pacote + extras

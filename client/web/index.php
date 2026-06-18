@@ -35,17 +35,28 @@ $addr = $path;
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $st = $pdo->prepare('SELECT data, expires_at FROM blobs WHERE addr = ?');
-    $st->execute([$addr]);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$row) { http_response_code(404); exit; }
-    if ((int)$row['expires_at'] <= $now) {                  // expiração preguiçosa
-        $pdo->prepare('DELETE FROM blobs WHERE addr = ?')->execute([$addr]);
-        http_response_code(404);
-        exit;
-    }
-    header('Content-Type: application/octet-stream');
-    echo $row['data'];
+    // Long-poll (?wait=N): segura a conexão até o blob aparecer ou N segundos.
+    // Isso reduz drasticamente a TAXA de conexões MySQL — o núcleo (GET) deixa de
+    // martelar a cada 15s e passa a manter UMA conexão por janela de N segundos,
+    // reusando o mesmo PDO no laço (evita o ban por conexões/hora do host).
+    $wait = isset($_GET['wait']) ? max(0, min(25, (int)$_GET['wait'])) : 0;
+    @set_time_limit($wait + 10);
+    $sel = $pdo->prepare('SELECT data, expires_at FROM blobs WHERE addr = ?');
+    $del = $pdo->prepare('DELETE FROM blobs WHERE addr = ?');
+    $deadline = time() + $wait;
+    do {
+        $sel->execute([$addr]);
+        $row = $sel->fetch(PDO::FETCH_ASSOC);
+        if ($row && (int)$row['expires_at'] > time()) {
+            header('Content-Type: application/octet-stream');
+            echo $row['data'];
+            exit;
+        }
+        if ($row) { $del->execute([$addr]); }               // expiração preguiçosa
+        if (time() >= $deadline) { break; }
+        usleep(700000);                                      // 0.7s entre checagens
+    } while (true);
+    http_response_code(404);
     exit;
 }
 

@@ -5,34 +5,111 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>myass — acesso</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
-    label { display: block; margin: .8rem 0 .2rem; font-weight: 600; }
-    input, select, textarea { width: 100%; padding: .5rem; box-sizing: border-box; }
-    button { margin-top: .8rem; padding: .5rem 1rem; cursor: pointer; }
-    pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
-    #status { color: #555; margin-top: 1rem; }
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 1.5rem auto; padding: 0 1rem; color: #222; }
+    h1, h2, h3 { margin: .4rem 0; }
+    label { display: block; margin: .7rem 0 .2rem; font-weight: 600; }
+    input, select, textarea { width: 100%; padding: .5rem; box-sizing: border-box; font: inherit; }
+    button { padding: .5rem 1rem; cursor: pointer; font: inherit; }
+    .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+    .row > * { margin: 0; }
+    .hidden { display: none !important; }
+    #status { color: #555; margin-top: 1rem; min-height: 1.2em; }
+    table { width: 100%; border-collapse: collapse; margin-top: .8rem; }
+    th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid #e3e3e3; }
+    tr.occ-row { cursor: pointer; }
+    tr.occ-row:hover { background: #f6f9ff; }
+    .badge { padding: 1px 8px; border: 1px solid #888; border-radius: 3px; font-size: .85em; }
+    .st-done { background: #cdebd3; } .st-running { background: #fde2b3; } .st-failed { background: #f5c6c6; }
+    /* modal */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex;
+               align-items: flex-start; justify-content: center; padding: 3vh 1rem; overflow: auto; z-index: 10; }
+    .modal { background: #fff; border-radius: 6px; padding: 1.2rem; width: 100%; max-width: 820px; box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+    .modal h3 { margin-top: 0; }
+    .legend { margin: .4rem 0; }
+    /* estrutograma Nassi */
+    .nassi { border: 1px solid #888; overflow: auto; }
+    .nassi-block { display: flex; flex-direction: column; }
+    .nassi-box { border: 1px solid #888; padding: 5px 8px; background: #eaf2fb; }
+    .nassi-box small { color: #666; }
+    .nassi-loop { border: 1px solid #888; background: #eaf7ee; }
+    .nassi-loop-head, .nassi-dec-head { font-weight: 600; padding: 4px 8px; }
+    .nassi-loop-body { margin-left: 16px; border-left: 1px solid #ccc; }
+    .nassi-foot { color: #666; font-size: .85em; padding: 2px 8px; }
+    .nassi-decision { border: 1px solid #888; background: #fdf3e0; }
+    .nassi-dec-head { text-align: center; }
+    .nassi-cols { display: flex; }
+    .nassi-col { flex: 1; border-left: 1px solid #ccc; }
+    .nassi-col-label { text-align: center; font-size: .85em; background: #faf2e2; }
+    pre { background: #f4f4f4; padding: .8rem; overflow: auto; }
   </style>
+  <!-- jQuery LOCAL no <head> (sem CDN). ?v= força o cache a buscar a versão nova. -->
+  <script src="js/jquery.min.js?v=2"></script>
 </head>
 <body>
   <h1>myass</h1>
-  <p>Informe sua chave criptográfica para ver seus workflows e criar ocorrências.
-     A cifra acontece <strong>no seu navegador</strong>; o servidor nunca vê a chave nem o conteúdo.</p>
 
-  <label for="chave">Chave criptográfica (hex de 32 bytes)</label>
-  <input id="chave" type="password" autocomplete="off" placeholder="64 caracteres hexadecimais">
-  <button id="btn-catalogo">Carregar meus workflows</button>
+  <!-- I — login: nome.chave -->
+  <section id="login">
+    <p>Informe sua chave para ver seus workflows e ocorrências. A cifra acontece
+       <strong>no seu navegador</strong>; o servidor nunca vê a chave nem o conteúdo.</p>
+    <label for="chave">Chave (<code>nome.chave</code> ou hex de 32 bytes)</label>
+    <input id="chave" type="password" autocomplete="off" placeholder="nome.0123abcd… ou 64 hex">
+    <div class="row"><button id="btn-iniciar">Iniciar</button></div>
+  </section>
 
-  <label for="workflows">Workflow</label>
-  <select id="workflows"></select>
-
-  <label for="inputs">Entradas (JSON)</label>
-  <textarea id="inputs" rows="4">{}</textarea>
-  <button id="btn-criar">Criar ocorrência</button>
+  <!-- II/III — painel: workflows + criar + lista de ocorrências -->
+  <section id="main" class="hidden">
+    <h2 id="client-name"></h2>
+    <div class="row">
+      <select id="workflows" style="max-width: 420px"></select>
+      <button id="btn-nova">Nova ocorrência</button>
+      <button id="btn-refresh">Atualizar</button>
+    </div>
+    <h3>Ocorrências</h3>
+    <table>
+      <thead><tr><th>ocorrência</th><th>workflow</th><th>status</th></tr></thead>
+      <tbody id="occ-rows"></tbody>
+    </table>
+  </section>
 
   <div id="status"></div>
-  <h3>Resposta</h3>
-  <pre id="resposta"></pre>
 
-  <script type="module" src="js/app.js"></script>
+  <!-- IV — modal nova ocorrência (form dinâmico) -->
+  <div id="modal-new" class="overlay hidden">
+    <div class="modal">
+      <h3 id="new-title">Nova ocorrência</h3>
+      <form id="new-form" onsubmit="return false"></form>
+      <div class="row" style="margin-top:1rem">
+        <button id="btn-salvar-new">Criar</button>
+        <button id="btn-cancel-new">Cancelar</button>
+        <span id="new-status" style="color:#555"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VI — modal detalhe da ocorrência (diagrama Nassi colorido) -->
+  <div id="modal-detail" class="overlay hidden">
+    <div class="modal">
+      <div class="row">
+        <h3 id="det-id" style="flex:1"></h3>
+        <span id="det-status" class="badge"></span>
+        <button id="btn-update-detail">↻ Update</button>
+        <button id="btn-close-detail">Fechar</button>
+      </div>
+      <div class="legend row">
+        <span class="badge st-done">feito</span>
+        <span class="badge st-running">executando</span>
+        <span class="badge st-failed">falhou</span>
+      </div>
+      <div id="det-diagram" class="nassi"></div>
+      <div id="det-artifacts" class="row" style="margin-top:.6rem"></div>
+      <div id="det-pdf" style="margin-top:.6rem"></div>
+      <h3>Erros</h3>
+      <pre id="det-errors"></pre>
+    </div>
+  </div>
+
+  <!-- ?v= força o cache/CDN a buscar a versão nova (furando cache do app.js). -->
+  <script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>

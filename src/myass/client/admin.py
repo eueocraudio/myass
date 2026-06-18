@@ -83,3 +83,15 @@ class AdminClient:
 
     def environment(self) -> dict:
         return self._rpc(E.ENVIRONMENT)[1]
+
+    # ---- chaves de cliente (web) --------------------------------------
+    def create_client(self, name: str, workflows: list) -> dict:
+        """Cria uma chave (nome + segredo) com os workflows permitidos. O ack
+        devolve o ``secret`` (hex) p/ distribuir ao usuário da web."""
+        return self._rpc(E.CREATE_CLIENT, {"name": name, "workflows": workflows})[1]
+
+    def update_client(self, name: str, workflows: list) -> dict:
+        return self._rpc(E.UPDATE_CLIENT, {"name": name, "workflows": workflows})[1]
+
+    def list_clients(self) -> list:
+        return self._rpc(E.LIST_CLIENTS)[1].get("clients", [])

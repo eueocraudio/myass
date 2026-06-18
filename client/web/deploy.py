@@ -32,6 +32,7 @@ RUNTIME_FILES = [
     "lib.php",
     ".htaccess",
     "index.html",
+    "js/jquery.min.js",
     "js/app.js",
     "js/myass-crypto.js",
 ]

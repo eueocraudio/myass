@@ -39,10 +39,19 @@ export const catalogKey      = s => derive(s, 'k-cat');
 export const requestAddress  = s => toHex(derive(s, 'a-req'));
 export const responseAddress = s => toHex(derive(s, 'a-resp'));
 export const catalogAddress  = s => toHex(derive(s, 'a-cat'));
+// ocorrências: índice por cliente + detalhe por occ_id (endereço = BLAKE2s
+// chaveado com o occ_id como dado — espelha o crypto.py).
+export const occIndexKey     = s => derive(s, 'k-occ');
+export const occIndexAddress = s => toHex(derive(s, 'a-occ'));
+export const occDetailKey    = s => derive(s, 'k-occd');
+export const occDetailAddress = (s, occId) =>
+  toHex(blake2s(enc.encode(occId), { key: derive(s, 'a-occd'), dkLen: 32 }));
 
 const AAD_REQ  = enc.encode('myass/edge/v1|req');
 const AAD_RESP = enc.encode('myass/edge/v1|resp');
 const AAD_CAT  = enc.encode('myass/edge/v1|cat');
+const AAD_OCC  = enc.encode('myass/edge/v1|occ');
+const AAD_OCCD = enc.encode('myass/edge/v1|occd');
 
 function seal(key, plaintext, aad) {
   const nonce = crypto.getRandomValues(new Uint8Array(12));
@@ -58,6 +67,8 @@ function open(key, blob, aad) {
 export const sealRequest  = (k, pt) => seal(k, pt, AAD_REQ);
 export const openResponse = (k, b)  => open(k, b, AAD_RESP);
 export const openCatalog  = (k, b)  => open(k, b, AAD_CAT);
+export const openOccIndex  = (k, b) => open(k, b, AAD_OCC);
+export const openOccDetail = (k, b) => open(k, b, AAD_OCCD);
 
 export const utf8  = s => enc.encode(s);
 export const fromUtf8 = b => new TextDecoder().decode(b);

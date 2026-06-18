@@ -30,14 +30,16 @@ ROLE_PUBLICADOR = "publicador"
 class SchedulerServer:
     def __init__(self, scheduler: Scheduler, host: str, port: int,
                  s_priv, s_pub: bytes, prologue: bytes, peers,
-                 engine=None, registry=None, blobs=None, data=None):
+                 engine=None, registry=None, blobs=None, data=None, core=None):
         """``peers`` = iterável de dicts ``{"id", "pub", "psk", "role"}``. ``blobs``
-        (BlobStore de projetos) e ``data`` (CoreDataStore) servem PROJECT_GET/DATA_*."""
+        (BlobStore de projetos) e ``data`` (CoreDataStore) servem PROJECT_GET/DATA_*.
+        ``core`` (o ``Core``) serve a gestão de chaves de cliente (CREATE/UPDATE/LIST)."""
         self.scheduler = scheduler
         self.engine = engine
         self.registry = registry
         self.blobs = blobs
         self.data = data
+        self.core = core
         self.host, self.port = host, port
         self.s_priv, self.s_pub = s_priv, s_pub
         self.prologue = prologue
@@ -155,6 +157,19 @@ class SchedulerServer:
                             info or {"erro": "ocorrência não encontrada"})
         if t == E.ENVIRONMENT:
             return E.encode(E.ENV_INFO, {"blocks": self.scheduler.store.list_inventory()})
+        if t in (E.CREATE_CLIENT, E.UPDATE_CLIENT, E.LIST_CLIENTS):
+            if self.core is None:
+                return E.encode(E.DENIED, {"motivo": "núcleo sem gestão de chaves"})
+            if t == E.LIST_CLIENTS:
+                return E.encode(E.CLIENTS, {"clients": self.core.list_clients()})
+            try:
+                if t == E.CREATE_CLIENT:
+                    secret = self.core.create_client(h["name"], h.get("workflows"))
+                    return E.encode(E.CLIENT_ACK, {"name": h["name"], "secret": secret.hex()})
+                self.core.update_client(h["name"], h.get("workflows"))
+                return E.encode(E.CLIENT_ACK, {"name": h["name"], "status": "atualizado"})
+            except ValueError as e:
+                return E.encode(E.CLIENT_ACK, {"erro": str(e)})
         return E.encode(E.DENIED, {"motivo": f"publicador não pode {t}"})
 
     def _handle_publish(self, publicador, h, body) -> bytes:

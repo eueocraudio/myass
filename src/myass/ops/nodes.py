@@ -53,9 +53,9 @@ class CoreNode:
             url = core_config.get("locutus_url")
             locutus = HttpLocutus(url) if url else MemoryLocutus()
         self.locutus = locutus
-        clients = ClientRegistry()
+        clients = ClientRegistry(db)
         for cid, sec in (core_config.get("clients") or {}).items():
-            clients.add(cid, bytes.fromhex(sec))
+            clients.seed(cid, bytes.fromhex(sec))  # semeia do config sem sobrescrever
         self.gateway = Gateway(locutus, clients, s.seen)
         self.core = Core(self.gateway, self.engine, self.registry, ReplyStore(db),
                          interpreter_workflow_hash=core_config.get("interpreter_workflow_hash"))
@@ -68,19 +68,26 @@ class CoreNode:
             P.load_private(bytes.fromhex(core_config["scheduler_priv"])),
             bytes.fromhex(core_config["scheduler_pub"]),
             bytes.fromhex(core_config["prologue"]), peers,
-            engine=self.engine, registry=self.registry, blobs=s.blobs, data=s.data)
+            engine=self.engine, registry=self.registry, blobs=s.blobs, data=s.data,
+            core=self.core)
         self.port = core_config["port"]
         self._stop = threading.Event()
         self._loops: list[threading.Thread] = []
 
     def start(self, run_loops: bool = True, reap_interval: float = 30.0,
-              poll_interval: float = 2.0) -> int:
+              poll_interval: float = 2.0, catalog_interval: float = 21600.0,
+              poll_wait: int = 0) -> int:
         """Sobe o servidor Noise. Com ``run_loops``, também os laços de fundo
-        (reap de leases e polling do Locutus)."""
+        (reap de leases, polling do Locutus e republicação dos catálogos antes do
+        TTL — ``catalog_interval``, default 6h, bem abaixo do TTL de 1 dia).
+        ``poll_wait>0`` faz o GET usar **long-poll** (segura a conexão N s no
+        servidor) — reduz a taxa de conexões ao MySQL do Locutus (evita ban)."""
+        self.poll_wait = poll_wait
         self.port = self.server.start()
         if run_loops:
             self._spawn(self._reap_loop, reap_interval)
             self._spawn(self._poll_loop, poll_interval)
+            self._spawn(self._catalog_loop, catalog_interval)
         return self.port
 
     def _spawn(self, target, interval):
@@ -96,13 +103,25 @@ class CoreNode:
                 pass
             self._stop.wait(interval)
 
-    def _poll_loop(self, interval):
+    def _catalog_loop(self, interval):
+        # publica na partida (catálogos podem ter expirado) e antes de cada TTL.
         while not self._stop.is_set():
             try:
-                self.core.poll_once()
+                self.core.publish_all_catalogs()
             except Exception:  # noqa: BLE001
                 pass
             self._stop.wait(interval)
+
+    def _poll_loop(self, interval):
+        # Com long-poll (poll_wait>0) o próprio GET espera no servidor; entre
+        # sweeps só um respiro curto. Sem long-poll, paceia por ``interval``.
+        wait = getattr(self, "poll_wait", 0)
+        while not self._stop.is_set():
+            try:
+                self.core.poll_once(wait=wait)
+            except Exception:  # noqa: BLE001
+                pass
+            self._stop.wait(0.2 if wait else interval)
 
     # operações manuais (úteis em teste/determinismo)
     def poll_once(self):

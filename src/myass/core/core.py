@@ -15,10 +15,12 @@ natural via drone VAI fica como caminho opcional/futuro.)
 
 from __future__ import annotations
 
+import json
 import threading
 
 from .. import errlog
-from ..workflow.inputs import InputError
+from ..edge import crypto
+from ..workflow.inputs import InputError, required_inputs
 
 
 class ReplyStore:
@@ -70,18 +72,29 @@ class Core:
 
     def _start_workflow(self, client_id, request_id, workflow_hash, inputs,
                         kind="final"):
+        # Autorização por chave: a chave do cliente só executa workflow da sua
+        # lista. ``None`` = todos (chave legada). É o muro real — independe do
+        # que a web mostra; hash fora da lista nunca roda.
+        allowed = self.gateway.registry.allowed(client_id)
+        if allowed is not None and workflow_hash not in allowed:
+            self.gateway.send_response(client_id, request_id,
+                                       {"erro": "workflow não autorizado para esta chave"})
+            return None
         template = self.registry.get_workflow(workflow_hash)
         if template is None:
             self.gateway.send_response(client_id, request_id,
                                        {"erro": "workflow não aprovado"})
             return None
         try:
-            occ_id = self.engine.start(template, inputs)
+            occ_id = self.engine.start(template, inputs, client_id=client_id)
         except InputError as e:
             self.gateway.send_response(client_id, request_id,
                                        {"erro": f"input inválido: {e}"})
             return None
         self.replies.put(occ_id, client_id, request_id, kind=kind)
+        # publica o estado inicial da ocorrência no Locutus (a web lista de lá).
+        self._publish_occurrences(client_id)
+        self._publish_occ_detail(client_id, occ_id)
         occ = self.engine.store.get(occ_id)  # write-once: só respondemos no fim
         if occ and occ["status"] != "running":
             self._on_finished(occ)
@@ -145,10 +158,103 @@ class Core:
             errlog.record(f"core: falha ao responder occ {occ['_id']}: {e!r}")
             return
         self.replies.delete(occ["_id"])
+        # atualiza a lista e o detalhe da ocorrência no Locutus (estado final).
+        cid = occ.get("client_id")
+        if cid:
+            self._publish_occurrences(cid)
+            self._publish_occ_detail(cid, occ["_id"])
+
+    # ---- gestão de chaves de cliente (admin) --------------------------
+    def create_client(self, name: str, workflows) -> bytes:
+        """Cria uma chave (nome + segredo 32B) com os workflows permitidos e
+        publica o catálogo selado no Locutus. Devolve o segredo p/ distribuir."""
+        secret = self.gateway.registry.create(name, workflows)
+        self._publish_catalog(name, secret, workflows)
+        return secret
+
+    def update_client(self, name: str, workflows) -> None:
+        """Edita os workflows permitidos de uma chave e republica o catálogo."""
+        self.gateway.registry.update(name, workflows)
+        secret = self.gateway.registry.get(name)
+        self._publish_catalog(name, secret, self.gateway.registry.allowed(name))
+
+    def list_clients(self) -> list[dict]:
+        return self.gateway.registry.list_clients()
+
+    def _build_catalog(self, name: str, workflows) -> dict:
+        """Catálogo do cliente: nome + os workflows permitidos com rótulo e o
+        **schema de inputs** (p/ a web montar o formulário dinâmico)."""
+        allow = set(workflows) if workflows is not None else None
+        wfs = []
+        for w in self.registry.catalog().get("workflows", []):
+            if allow is not None and w["hash"] not in allow:
+                continue
+            try:
+                inputs = required_inputs(w.get("conteudo") or {}, self.registry.params_for)
+            except Exception:  # noqa: BLE001
+                inputs = {}
+            wfs.append({"hash": w["hash"], "label": w["nome"], "versao": w["versao"],
+                        "inputs": inputs})
+        return {"name": name, "workflows": wfs}
+
+    # ---- publicação de ocorrências no Locutus (a web lê de lá) --------
+    def _publish_occurrences(self, client_id) -> None:
+        secret = self.gateway.registry.get(client_id) if client_id else None
+        if not secret:
+            return
+        lista = self.engine.store.recent_for(client_id)
+        blob = crypto.seal_occ_index(crypto.occ_index_key(secret),
+                                     json.dumps(lista, ensure_ascii=False).encode("utf-8"))
+        addr = crypto.occ_index_address(secret)
+        try:
+            self.gateway.store.delete(addr)
+            self.gateway.store.put(addr, blob)
+        except Exception as e:  # noqa: BLE001
+            errlog.record(f"core: falha ao publicar índice de {client_id}: {e!r}")
+
+    def _publish_occ_detail(self, client_id, occ_id) -> None:
+        secret = self.gateway.registry.get(client_id) if client_id else None
+        if not secret:
+            return
+        detail = self.engine.store.detail(occ_id)
+        if detail is None:
+            return
+        blob = crypto.seal_occ_detail(crypto.occ_detail_key(secret),
+                                      json.dumps(detail, ensure_ascii=False).encode("utf-8"))
+        addr = crypto.occ_detail_address(secret, occ_id)
+        try:
+            self.gateway.store.delete(addr)
+            self.gateway.store.put(addr, blob)
+        except Exception as e:  # noqa: BLE001
+            errlog.record(f"core: falha ao publicar detalhe {occ_id}: {e!r}")
+
+    def _publish_catalog(self, name, secret, workflows) -> None:
+        """Sela e publica o catálogo do cliente no Locutus (server-side, por
+        design). DELETE+PUT porque o slot é write-once — editar precisa
+        sobrescrever o blob anterior."""
+        if not secret:
+            return
+        cat = self._build_catalog(name, workflows)
+        blob = crypto.seal_catalog(crypto.catalog_key(secret),
+                                   json.dumps(cat, ensure_ascii=False).encode("utf-8"))
+        addr = crypto.catalog_address(secret)
+        try:
+            self.gateway.store.delete(addr)
+            self.gateway.store.put(addr, blob)
+        except Exception as e:  # noqa: BLE001
+            errlog.record(f"core: falha ao publicar catálogo de {name}: {e!r}")
+
+    def publish_all_catalogs(self) -> int:
+        """Republica os catálogos de todas as chaves (na partida e antes do TTL)."""
+        n = 0
+        for c in self.gateway.registry.list_clients():
+            self._publish_catalog(c["name"], bytes.fromhex(c["secret"]), c["workflows"])
+            n += 1
+        return n
 
     # ---- laço de polling da borda -------------------------------------
-    def poll_once(self) -> int:
-        return self.gateway.poll()
+    def poll_once(self, wait: int = 0) -> int:
+        return self.gateway.poll(wait=wait)
 
     def run(self, stop_event: threading.Event, interval: float = 2.0) -> None:
         """Faz polling do Locutus em laço até ``stop_event``."""

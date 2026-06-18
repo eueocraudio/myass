@@ -12,3 +12,13 @@ RewriteRule (^|/)\.(?!well-known/) - [F]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
+
+# CACHE: a app é estática mas muda a cada deploy; sem isto o browser serve um
+# app.js/HTML velho do cache contra um HTML/JS novo (botões somem, erros tipo
+# "$(...) is null"). Força revalidação a cada carga (no-cache não é "no-store":
+# o browser ainda usa o cache, mas SEMPRE revalida com o servidor via ETag).
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

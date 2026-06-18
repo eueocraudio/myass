@@ -22,7 +22,7 @@ import copy
 import json
 import os
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QFrame, QHBoxLayout,
     QInputDialog, QLabel, QLineEdit, QMessageBox, QPlainTextEdit, QPushButton,
@@ -89,6 +89,19 @@ _NASSI_COLORS = {
     "loop": "#eaf7ee", "block": "transparent",
 }
 
+# Cores de status de execução (sobrepõem a cor do tipo quando há ``status_of``):
+# verde = feito, amarelo = executando, vermelho = falhou. Mesma paleta do badge.
+_STATUS_COLORS = {"done": "#cdebd3", "running": "#fde2b3", "failed": "#f5c6c6"}
+
+
+def _box_color(tipo: str, node: dict, status_of) -> str:
+    """Cor da caixa: o status de execução vence a cor do tipo, se houver."""
+    if status_of is not None:
+        c = _STATUS_COLORS.get(status_of(node))
+        if c:
+            return c
+    return _NASSI_COLORS.get(tipo, "transparent")
+
 
 def _short(h) -> str:
     if not isinstance(h, str):
@@ -153,9 +166,10 @@ def _node_box(color, path=None, on_select=None, selected=None) -> QFrame:
 
 
 def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
-                 on_select=None, selected=None) -> QWidget:
+                 on_select=None, selected=None, status_of=None) -> QWidget:
     """Widget do estrutograma para ``node`` (em ``path``). ``resolve(script_hash)
-    -> 'bot/script'`` rotula as ações; ``on_select(path)`` torna os nós clicáveis."""
+    -> 'bot/script'`` rotula as ações; ``on_select(path)`` torna os nós clicáveis;
+    ``status_of(node) -> 'done'|'running'|'failed'|None`` colore por execução."""
     path = list(path)
     tipo = node.get("tipo")
 
@@ -171,11 +185,11 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
             v.addWidget(empty)
         for i, ch in enumerate(filhos):
             v.addWidget(nassi_widget(ch, resolve, path + ["filhos", i],
-                                     on_select, selected))
+                                     on_select, selected, status_of))
         return holder
 
     if tipo == "action":
-        box = _node_box(_NASSI_COLORS["action"], path, on_select, selected)
+        box = _node_box(_box_color("action", node, status_of), path, on_select, selected)
         v = QVBoxLayout(box)
         v.setContentsMargins(8, 5, 8, 5)
         v.setSpacing(1)
@@ -191,7 +205,7 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
         return box
 
     if tipo == "loop":
-        box = _node_box(_NASSI_COLORS["loop"], path, on_select, selected)
+        box = _node_box(_box_color("loop", node, status_of), path, on_select, selected)
         v = QVBoxLayout(box)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(0)
@@ -206,7 +220,8 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
         hb.setSpacing(0)
         corpo = node.get("corpo")
         if corpo:
-            hb.addWidget(nassi_widget(corpo, resolve, path + ["corpo"], on_select, selected))
+            hb.addWidget(nassi_widget(corpo, resolve, path + ["corpo"],
+                                      on_select, selected, status_of))
         else:
             hb.addWidget(_node_box("transparent"))
         v.addWidget(inset)
@@ -218,7 +233,7 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
         return box
 
     if tipo == "decision":
-        box = _node_box(_NASSI_COLORS["decision"], path, on_select, selected)
+        box = _node_box(_box_color("decision", node, status_of), path, on_select, selected)
         v = QVBoxLayout(box)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(0)
@@ -241,7 +256,7 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
             cv.setSpacing(0)
             cv.addWidget(_label(str(label), small=True, center=True))
             cv.addWidget(nassi_widget(sub, resolve, path + ["rotas", label],
-                                      on_select, selected))
+                                      on_select, selected, status_of))
             cv.addStretch(1)
             hb.addWidget(col)
         v.addWidget(cols)
@@ -250,7 +265,7 @@ def nassi_widget(node: dict, resolve=lambda h: "", path=("raiz",),
         return box
 
     if "raiz" in node:
-        return nassi_widget(node["raiz"], resolve, ["raiz"], on_select, selected)
+        return nassi_widget(node["raiz"], resolve, ["raiz"], on_select, selected, status_of)
     box = _node_box("transparent", path, on_select, selected)
     QVBoxLayout(box).addWidget(_label(f"[{tipo}]", gray=True))
     return box
@@ -891,29 +906,126 @@ class PdfViewerDialog(QDialog):
         lay.addWidget(view)
 
 
-class OccurrenceDetailDialog(QDialog):
-    """Detalhes de uma ocorrência (curados pelo núcleo): status, workflow,
-    inputs, resultado/falha e saídas por nó. Arquivos inline (``$b64``) ganham
-    botões **Visualizar** (PDF, embutido) e **Salvar**."""
+def _walk_named_nodes(node):
+    """Itera os nós nomeados (action/decision/loop) — a unidade que ganha status."""
+    if isinstance(node, dict):
+        if node.get("tipo") in ("action", "decision", "loop") and node.get("nome"):
+            yield node
+        for v in (node.get("raiz"), node.get("corpo")):
+            if v:
+                yield from _walk_named_nodes(v)
+        for ch in node.get("filhos") or []:
+            yield from _walk_named_nodes(ch)
+        for sub in (node.get("rotas") or {}).values():
+            yield from _walk_named_nodes(sub)
 
-    def __init__(self, info: dict, parent=None):
+
+def _iter_errors(obj):
+    """Acha dicts em forma de erro (``motivo``/``erro``) em qualquer profundidade."""
+    if isinstance(obj, dict):
+        msg = obj.get("motivo") or obj.get("erro")
+        if msg:
+            yield obj
+        for v in obj.values():
+            yield from _iter_errors(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from _iter_errors(v)
+
+
+def _short_val(v) -> str:
+    s = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    return s if len(s) <= 200 else s[:200] + "…"
+
+
+def _fill_tree(parent, value):
+    """Popula um QTreeWidget(Item) recursivamente a partir de um JSON."""
+    items = (value.items() if isinstance(value, dict)
+             else enumerate(value) if isinstance(value, list) else [])
+    for k, v in items:
+        key = str(k) if isinstance(value, dict) else f"[{k}]"
+        if isinstance(v, (dict, list)):
+            n = len(v)
+            kind = f"{{{n}}}" if isinstance(v, dict) else f"[{n}]"
+            it = QTreeWidgetItem(parent, [key, kind])
+            _fill_tree(it, v)
+        else:
+            QTreeWidgetItem(parent, [key, _short_val(v)])
+
+
+class OccurrenceDetailDialog(QDialog):
+    """Detalhes de uma ocorrência em 4 abas, para humanos:
+    **Diagrama** (estrutograma Nassi colorido: verde=feito, amarelo=executando,
+    vermelho=falhou), **JSON** (árvore expansível), **Status** (números da
+    execução) e **Erros** (texto). Topo: badge de status, botões de artefato
+    (Visualizar PDF / Salvar) e **Re-executar** com os mesmos inputs."""
+
+    def __init__(self, info: dict, resolve=None, client=None, on_rerun=None, parent=None):
         super().__init__(parent)
+        self._info = info
+        self._client = client
+        self._on_rerun = on_rerun
         oid = info.get("occurrence_id", "?")
         self.setWindowTitle(f"Ocorrência — {oid}")
-        self.resize(640, 560)
+        self.resize(860, 680)
         lay = QVBoxLayout(self)
         wf = info.get("workflow") or {}
-        lay.addWidget(_label(oid, bold=True))
-        lay.addWidget(_label(f"workflow: {wf.get('nome')} v{wf.get('versao')}"))
-        st = info.get("status")
-        badge = QLabel(f"  {st}  ")
-        color = {"done": "#cdebd3", "failed": "#f5c6c6",
-                 "running": "#fde2b3"}.get(st, "#dddddd")
-        badge.setStyleSheet(f"QLabel {{ background:{color}; border:1px solid #888;"
-                            " border-radius:3px; }")
-        lay.addWidget(badge)
 
-        # botões por arquivo inline (Visualizar PDF embutido + Salvar).
+        # ---- cabeçalho: id + workflow + badge + ações --------------------
+        self._resolve = resolve
+        head = QHBoxLayout()
+        idcol = QVBoxLayout()
+        idcol.addWidget(_label(oid, bold=True))
+        idcol.addWidget(_label(f"workflow: {wf.get('nome')} v{wf.get('versao')}", small=True))
+        head.addLayout(idcol)
+        self._badge = QLabel()
+        self._set_badge(info.get("status"))
+        head.addWidget(self._badge)
+        head.addStretch(1)
+        # Botão Update: só aparece enquanto a ocorrência está em execução —
+        # re-busca o detalhe no núcleo e redesenha as abas (status muda no tempo).
+        self._btn_update = QPushButton("↻ Update")
+        self._btn_update.clicked.connect(self._update)
+        self._btn_update.setVisible(client is not None and info.get("status") == "running")
+        head.addWidget(self._btn_update)
+        # V — re-executar com os mesmos inputs (precisa de client + template_hash).
+        if client is not None and info.get("template_hash"):
+            brer = QPushButton("↻ Re-executar (mesmos inputs)")
+            brer.clicked.connect(self._rerun)
+            head.addWidget(brer)
+        lay.addLayout(head)
+
+        # Corpo (artefatos + abas), reconstruído a cada Update.
+        self._body = QWidget()
+        self._body_lay = QVBoxLayout(self._body)
+        self._body_lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(self._body)
+        self._render_body()
+
+    def _set_badge(self, st):
+        color = _STATUS_COLORS.get(st, "#dddddd")
+        self._badge.setText(f"  {st}  ")
+        self._badge.setStyleSheet(f"QLabel {{ background:{color}; border:1px solid #888;"
+                                  " border-radius:3px; }")
+
+    @staticmethod
+    def _clear_layout(lay):
+        while lay.count():
+            it = lay.takeAt(0)
+            w = it.widget()
+            if w is not None:
+                w.deleteLater()
+            elif it.layout() is not None:
+                OccurrenceDetailDialog._clear_layout(it.layout())
+
+    def _render_body(self):
+        """(Re)constrói os botões de artefato + as 4 abas a partir de ``self._info``,
+        preservando a aba selecionada."""
+        info = self._info
+        prev = getattr(self, "_tabs", None)
+        keep = prev.currentIndex() if prev is not None else 0
+        self._clear_layout(self._body_lay)
+
         artifacts = []
         _find_artifacts(info.get("result"), artifacts)
         for nome, b64 in artifacts:
@@ -925,16 +1037,144 @@ class OccurrenceDetailDialog(QDialog):
             bsave = QPushButton(f"Salvar {nome}…")
             bsave.clicked.connect(lambda _c=False, n=nome, b=b64: self._save(n, b))
             row.addWidget(bsave)
-            lay.addLayout(row)
+            row.addStretch(1)
+            self._body_lay.addLayout(row)
 
-        body = QPlainTextEdit(json.dumps({
+        tabs = QTabWidget()
+        tabs.addTab(self._tab_diagram(info, self._resolve), "Diagrama")
+        tabs.addTab(self._tab_json(info), "JSON (árvore)")
+        tabs.addTab(self._tab_stats(info), "Status")
+        tabs.addTab(self._tab_errors(info), "Erros")
+        tabs.setCurrentIndex(keep)
+        self._tabs = tabs
+        self._body_lay.addWidget(tabs)
+
+    def _update(self):
+        """Re-busca o detalhe da ocorrência no núcleo e redesenha (p/ ``running``)."""
+        try:
+            new = self._client.get_occurrence(self._info.get("occurrence_id"))
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.warning(self, "myass", f"erro ao atualizar: {e}")
+            return
+        if new.get("erro"):
+            QMessageBox.warning(self, "myass", new["erro"])
+            return
+        # o workflow não muda: preserva o template se o detalhe novo não o trouxer.
+        if not new.get("template") and self._info.get("template"):
+            new["template"] = self._info["template"]
+        self._info = new
+        self._set_badge(new.get("status"))
+        self._btn_update.setVisible(new.get("status") == "running")
+        self._render_body()
+
+    # ---- I — diagrama Nassi colorido por status -----------------------
+    def _tab_diagram(self, info, resolve):
+        w = QWidget()
+        v = QVBoxLayout(w)
+        legend = QHBoxLayout()
+        for txt, key in (("feito", "done"), ("executando", "running"), ("falhou", "failed")):
+            tag = QLabel(f"  {txt}  ")
+            tag.setStyleSheet(f"QLabel {{ background:{_STATUS_COLORS[key]};"
+                              " border:1px solid #888; border-radius:3px; }")
+            legend.addWidget(tag)
+        legend.addStretch(1)
+        v.addLayout(legend)
+        tmpl = info.get("template")
+        if not tmpl:
+            v.addWidget(_label("(núcleo antigo: sem template no detalhe)", gray=True))
+            return w
+        ns = info.get("node_status") or {}
+        diag = nassi_widget(tmpl, resolve or (lambda h: ""), ["raiz"],
+                            status_of=lambda node: ns.get(node.get("nome")))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(diag)
+        v.addWidget(scroll)
+        return w
+
+    # ---- II — JSON em árvore expansível -------------------------------
+    def _tab_json(self, info):
+        tree = QTreeWidget()
+        tree.setHeaderLabels(["chave", "valor"])
+        tree.setColumnWidth(0, 280)
+        data = {
+            "status": info.get("status"),
             "inputs": info.get("inputs"),
             "result": _strip_b64(info.get("result")),
-            "fail": info.get("fail"),
             "node_outputs": _strip_b64(info.get("node_outputs")),
-        }, ensure_ascii=False, indent=2))
+            "fail": info.get("fail"),
+            "node_status": info.get("node_status"),
+        }
+        _fill_tree(tree, data)
+        tree.expandToDepth(0)
+        return tree
+
+    # ---- III — números da execução ------------------------------------
+    def _tab_stats(self, info):
+        w = QWidget()
+        form = QFormLayout(w)
+        ns = info.get("node_status") or {}
+        total = sum(1 for _ in _walk_named_nodes(info.get("template") or {}))
+        done = sum(1 for s in ns.values() if s == "done")
+        running = sum(1 for s in ns.values() if s == "running")
+        failed = sum(1 for s in ns.values() if s == "failed")
+        artifacts = []
+        _find_artifacts(info.get("result"), artifacts)
+        n_err = sum(1 for _ in _iter_errors(info.get("node_outputs"))) + \
+            (1 if info.get("fail") else 0)
+        pct = f"{(100 * done / total):.0f}%" if total else "—"
+        rows = [
+            ("Ocorrência", info.get("occurrence_id", "?")),
+            ("Status", info.get("status", "?")),
+            ("Workflow", f"{(info.get('workflow') or {}).get('nome')} "
+                         f"v{(info.get('workflow') or {}).get('versao')}"),
+            ("Atividades (total)", str(total)),
+            ("Concluídas", f"{done}  ({pct})"),
+            ("Em execução", str(running)),
+            ("Falhas", str(failed)),
+            ("Artefatos no resultado", str(len(artifacts))),
+            ("Erros registrados", str(n_err)),
+            ("Tem resultado final", "sim" if info.get("result") is not None else "não"),
+        ]
+        for k, val in rows:
+            form.addRow(_label(k + ":", bold=True), _label(str(val)))
+        return w
+
+    # ---- IV — todos os erros em texto ---------------------------------
+    def _tab_errors(self, info):
+        lines = []
+        fail = info.get("fail")
+        if fail:
+            nm = fail.get("_node")
+            lines.append(f"[FALHA DA OCORRÊNCIA] {('nó ' + nm + ': ') if nm else ''}"
+                         f"{fail.get('motivo', '')}".rstrip())
+            lines.append(json.dumps(_strip_b64(fail), ensure_ascii=False, indent=2))
+            lines.append("")
+        for name, out in (info.get("node_outputs") or {}).items():
+            for err in _iter_errors(out):
+                nm = err.get("_node") or name
+                lines.append(f"[{nm}] {err.get('motivo') or err.get('erro')}")
+        body = QPlainTextEdit("\n".join(lines).rstrip() if lines
+                              else "Sem erros registrados.")
         body.setReadOnly(True)
-        lay.addWidget(body)
+        return body
+
+    # ---- V — re-executar ----------------------------------------------
+    def _rerun(self):
+        th = self._info.get("template_hash")
+        inputs = self._info.get("inputs") or {}
+        try:
+            ack = self._client.start_occurrence(th, inputs)
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.warning(self, "myass", f"erro ao re-executar: {e}")
+            return
+        if ack.get("erro"):
+            QMessageBox.warning(self, "myass", f"rejeitado: {ack['erro']}")
+            return
+        new_oid = ack.get("occurrence_id", "?")
+        if self._on_rerun:
+            self._on_rerun()
+        QMessageBox.information(self, "myass", f"nova ocorrência: {new_oid}")
 
     def _view(self, nome, b64):
         try:
@@ -956,6 +1196,107 @@ class OccurrenceDetailDialog(QDialog):
         QMessageBox.information(self, "myass", f"salvo: {path}")
 
 
+class ClientKeyDialog(QDialog):
+    """Criar/editar uma chave de cliente da web: nome + seleção de workflows que a
+    chave pode ver/executar. Ao criar, o núcleo gera o segredo e publica o catálogo
+    selado; o segredo é exibido para distribuir. Ao editar, atualiza os workflows
+    (o núcleo republica o catálogo)."""
+
+    def __init__(self, client: dict | None, workflows: list, admin, parent=None):
+        super().__init__(parent)
+        self._client = client
+        self._admin = admin
+        editing = client is not None
+        self.setWindowTitle("Editar chave" if editing else "Nova chave")
+        self.resize(540, 500)
+        lay = QVBoxLayout(self)
+
+        form = QFormLayout()
+        self.name_edit = QLineEdit(client["name"] if editing else "")
+        self.name_edit.setReadOnly(editing)
+        form.addRow("Nome:", self.name_edit)
+        self.secret_edit = QLineEdit(client.get("secret", "") if editing else "")
+        self.secret_edit.setReadOnly(True)
+        self.secret_edit.setPlaceholderText("(gerada ao criar)")
+        secret_row = QWidget()
+        sr = QHBoxLayout(secret_row)
+        sr.setContentsMargins(0, 0, 0, 0)
+        sr.addWidget(self.secret_edit)
+        self.copy_btn = QPushButton("Copiar nome.chave")
+        self.copy_btn.clicked.connect(self._copy_namekey)
+        sr.addWidget(self.copy_btn)
+        form.addRow("Chave (hex):", secret_row)
+        lay.addLayout(form)
+
+        lay.addWidget(_label("Workflows que esta chave pode ver/executar:", bold=True))
+        allowed = client.get("workflows") if editing else None  # None = todos (legado)
+        self.wf_tree = QTreeWidget()
+        self.wf_tree.setHeaderLabels(["workflow", "versão", "hash"])
+        for wdef in workflows:
+            h = wdef["hash"]
+            it = QTreeWidgetItem([wdef.get("nome", wdef.get("label", "?")),
+                                  str(wdef.get("versao", "")), _short(h)])
+            it.setData(0, Qt.ItemDataRole.UserRole, h)
+            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            # editar: marca os permitidos (allowed None = todos). novo: desmarcado.
+            chk = editing and (allowed is None or h in (allowed or []))
+            it.setCheckState(0, Qt.CheckState.Checked if chk else Qt.CheckState.Unchecked)
+            self.wf_tree.addTopLevelItem(it)
+        lay.addWidget(self.wf_tree)
+
+        row = QHBoxLayout()
+        row.addStretch(1)
+        self.save_btn = QPushButton("Salvar" if editing else "Criar")
+        self.save_btn.clicked.connect(self._save)
+        row.addWidget(self.save_btn)
+        lay.addLayout(row)
+        self.status = QLabel("")
+        lay.addWidget(self.status)
+
+    def _copy_namekey(self):
+        """Copia ``nome.chave`` (nome + segredo hex) para a área de transferência."""
+        name = self.name_edit.text().strip()
+        secret = self.secret_edit.text().strip()
+        if not secret:
+            self.status.setText("ainda não há chave — crie/salve primeiro.")
+            return
+        from PySide6.QtWidgets import QApplication
+        QApplication.clipboard().setText(f"{name}.{secret}")
+        self.status.setText("nome.chave copiado para a área de transferência.")
+
+    def _selected(self) -> list:
+        out = []
+        for i in range(self.wf_tree.topLevelItemCount()):
+            it = self.wf_tree.topLevelItem(i)
+            if it.checkState(0) == Qt.CheckState.Checked:
+                out.append(it.data(0, Qt.ItemDataRole.UserRole))
+        return out
+
+    def _save(self):
+        name = self.name_edit.text().strip()
+        if not name:
+            self.status.setText("informe um nome para a chave.")
+            return
+        wfs = self._selected()
+        editing = self._client is not None
+        try:
+            ack = (self._admin.update_client(name, wfs) if editing
+                   else self._admin.create_client(name, wfs))
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.warning(self, "myass", f"erro: {e}")
+            return
+        if ack.get("erro"):
+            self.status.setText("erro: " + ack["erro"])
+            return
+        if not editing and ack.get("secret"):
+            self.secret_edit.setText(ack["secret"])
+            QMessageBox.information(
+                self, "myass",
+                "Chave criada. Copie e entregue ao usuário (não some depois):\n\n"
+                + ack["secret"])
+        self.accept()
+
+
 class AdminWindow(QWidget):
     """Janela principal. ``client`` é um ``AdminClient`` (pode vir None p/ smoke)."""
 
@@ -974,8 +1315,12 @@ class AdminWindow(QWidget):
         # publicar e ambiente são tarefas de bastidor.
         tabs.addTab(self._tab_ocorrencias(), "Ocorrências")
         tabs.addTab(self._tab_catalogo(), "Catálogo")
+        tabs.addTab(self._tab_chaves(), "Chaves")
         tabs.addTab(self._tab_publicar(), "Publicar")
         tabs.addTab(self._tab_ambiente(), "Ambiente")
+        self._tabs = tabs
+        # Entrar numa aba já a atualiza (sem clicar "Atualizar").
+        tabs.currentChanged.connect(self._on_tab_changed)
 
         self.status = QLabel("Pronto.")
         root = QVBoxLayout(self)
@@ -983,6 +1328,23 @@ class AdminWindow(QWidget):
         root.addWidget(self.status)
 
         self._refresh_drafts()
+        # Auto-atualiza tudo ao abrir o painel — adiado para depois do 1º paint,
+        # para a janela já aparecer responsiva enquanto os dados chegam.
+        QTimer.singleShot(0, self._refresh_all)
+
+    def _on_tab_changed(self, idx: int):
+        {0: self._refresh_occurrences, 1: self._refresh_catalog,
+         2: self._refresh_clients, 4: self._refresh_env}.get(idx, lambda: None)()
+
+    def _refresh_all(self):
+        """Carrega catálogo (+paleta), ocorrências, chaves e ambiente de uma vez.
+        No-op sem conexão (cada _refresh_* já protege com _guard)."""
+        if self.client is None:
+            return
+        self._refresh_catalog()
+        self._refresh_occurrences()
+        self._refresh_clients()
+        self._refresh_env()
 
     # ---- abas ----------------------------------------------------------
     def _tab_publicar(self) -> QWidget:
@@ -1084,7 +1446,69 @@ class AdminWindow(QWidget):
         if info.get("erro"):
             self.status.setText(info["erro"])
             return
-        OccurrenceDetailDialog(info, parent=self).exec()
+        self._ensure_palette()  # garante o índice script_hash→nome p/ rotular o diagrama
+        # Fallback: se o núcleo não enviou o template no detalhe, pega o do
+        # catálogo (o ``conteudo`` do workflow publicado é o próprio template) —
+        # assim a aba Diagrama desenha todas as tasks mesmo contra núcleo antigo.
+        if not info.get("template"):
+            th, wf = info.get("template_hash"), info.get("workflow") or {}
+            for w in (self._last_catalog or {}).get("workflows", []):
+                if w.get("hash") == th or (w.get("nome") == wf.get("nome")
+                                           and str(w.get("versao")) == str(wf.get("versao"))):
+                    info = {**info, "template": w.get("conteudo")}
+                    break
+        OccurrenceDetailDialog(info, resolve=self._resolve(), client=self.client,
+                               on_rerun=self._refresh_occurrences, parent=self).exec()
+
+    # ---- aba Chaves (criar/editar chaves de cliente da web) -----------
+    def _tab_chaves(self) -> QWidget:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        row = QHBoxLayout()
+        b_new = QPushButton("Nova chave…")
+        b_new.clicked.connect(self._new_client)
+        b_ref = QPushButton("Atualizar")
+        b_ref.clicked.connect(self._refresh_clients)
+        row.addWidget(b_new)
+        row.addWidget(b_ref)
+        row.addStretch(1)
+        lay.addLayout(row)
+        lay.addWidget(_label("Chaves de cliente (duplo-clique → editar workflows):",
+                             small=True, gray=True))
+        self.clients_tree = QTreeWidget()
+        self.clients_tree.setHeaderLabels(["nome", "workflows", "chave (hex)"])
+        self.clients_tree.setColumnWidth(0, 160)
+        self.clients_tree.itemDoubleClicked.connect(self._edit_client)
+        lay.addWidget(self.clients_tree)
+        return w
+
+    def _refresh_clients(self):
+        if not self._guard():
+            return
+        self.clients_tree.clear()
+        for c in self.client.list_clients():
+            wf = c.get("workflows")
+            qtd = "todos" if wf is None else str(len(wf))
+            it = QTreeWidgetItem([c.get("name", c["client_id"]), qtd, c.get("secret", "")])
+            it.setData(0, Qt.ItemDataRole.UserRole, c)
+            self.clients_tree.addTopLevelItem(it)
+
+    def _new_client(self):
+        if not self._guard():
+            return
+        self._ensure_palette()
+        ClientKeyDialog(None, (self._last_catalog or {}).get("workflows", []),
+                        self.client, parent=self).exec()
+        self._refresh_clients()
+
+    def _edit_client(self, item, _col=0):
+        if not self._guard():
+            return
+        self._ensure_palette()
+        c = item.data(0, Qt.ItemDataRole.UserRole)
+        ClientKeyDialog(c, (self._last_catalog or {}).get("workflows", []),
+                        self.client, parent=self).exec()
+        self._refresh_clients()
 
     def _tab_ambiente(self) -> QWidget:
         w = QWidget()

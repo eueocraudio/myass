@@ -19,7 +19,11 @@ S = "_WELLINGTON_TEC_BR"
 ftp_host = env["FTP_HOST" + S].replace("ftp://", "").replace("ftps://", "").strip("/")
 out = (
     "# GERADO de ~/.env — NAO comitar (gitignored). Locutus web -> wellington.tec.br\n"
-    f"DB_HOST={env['MYSQL_HOST' + S]}\n"
+    # O app PHP roda no MESMO servidor do MySQL (Hostinger), então conecta por
+    # 127.0.0.1 — o IP remoto (MYSQL_HOST) passa por um caminho/proxy com teto de
+    # conexões por hora; localhost foge disso. O IP remoto fica só no ~/.env, para
+    # ferramentas externas (ex.: diagnóstico).
+    "DB_HOST=127.0.0.1\n"
     f"DB_NAME={env['MYSQL_DATA' + S]}\n"
     f"DB_USER={env['MYSQL_USER' + S]}\n"
     f"DB_PASS={env['MYSQL_PASS' + S]}\n"

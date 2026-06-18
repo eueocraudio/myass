@@ -24,11 +24,12 @@ mapeadas em ``inflight[atividade_id] -> frame``.
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 
 from .. import errlog
 from .inputs import InputError, validate_inputs  # noqa: F401  (reexport p/ callers)
-from .template import ROOT_PATH, node_at
+from .template import ROOT_PATH, node_at, template_hash
 
 STATUS_RUNNING = "running"
 STATUS_DONE = "done"
@@ -51,30 +52,61 @@ class OccurrenceStore:
         só ocorrências iniciadas por um humano aparecem no painel."""
         out = []
         for d in self.col.find({"origin": {"$ne": "internal"}},
-                               {"status": 1, "result": 1, "fail": 1,
-                                "template.nome": 1, "template.versao": 1}).limit(limit):
+                               {"status": 1, "result": 1, "fail": 1, "created_at": 1,
+                                "template.nome": 1, "template.versao": 1}
+                               ).sort("created_at", -1).limit(limit):
             tmpl = d.get("template") or {}
             out.append({"occurrence_id": d["_id"], "status": d["status"],
                         "workflow": f"{tmpl.get('nome', '?')} v{tmpl.get('versao', '')}".strip(),
                         "result": d.get("result"), "fail": d.get("fail")})
         return out
 
+    def recent_for(self, client_id: str, limit: int = 50) -> list[dict]:
+        """Ocorrências de um cliente da web (para a lista que ele lê do Locutus),
+        **por ordem de chegada DESC** (mais recente primeiro)."""
+        out = []
+        for d in self.col.find({"client_id": client_id},
+                               {"status": 1, "template.nome": 1, "template.versao": 1,
+                                "created_at": 1}).sort("created_at", -1).limit(limit):
+            tmpl = d.get("template") or {}
+            out.append({"occurrence_id": d["_id"], "status": d["status"],
+                        "workflow": f"{tmpl.get('nome', '?')} v{tmpl.get('versao', '')}".strip()})
+        return out
+
     def detail(self, occ_id: str) -> dict | None:
         """Detalhe curado de uma ocorrência (para a tela de informações do admin):
-        status, workflow, inputs, resultado/falha e saídas por nó nomeado. Não
-        expõe o template/frames internos."""
+        status, workflow, inputs, resultado/falha, saídas por nó nomeado, o
+        ``template`` (p/ desenhar o estrutograma), um ``node_status`` por nó
+        (``done``/``running``/``failed``, p/ colorir o diagrama) e o
+        ``template_hash`` (p/ re-executar). Não expõe os frames internos."""
         d = self.col.find_one({"_id": occ_id})
         if d is None:
             return None
         tmpl = d.get("template") or {}
+        node_outputs = d.get("node_outputs") or {}
+        fail = d.get("fail")
+        # status por nó: feito (tem saída) < executando (em voo) < falhou.
+        node_status = {name: "done" for name in node_outputs}
+        for inf in (d.get("inflight") or {}).values():
+            try:
+                nm = node_at(tmpl, inf["nid_path"]).get("nome")
+            except Exception:  # noqa: BLE001
+                nm = None
+            if nm and nm not in node_status:
+                node_status[nm] = "running"
+        if fail and fail.get("_node"):
+            node_status[fail["_node"]] = "failed"
         return {
             "occurrence_id": d["_id"],
             "status": d.get("status"),
             "workflow": {"nome": tmpl.get("nome"), "versao": tmpl.get("versao")},
+            "template": tmpl,
+            "template_hash": template_hash(tmpl) if tmpl else None,
             "inputs": d.get("inputs"),
             "result": d.get("result"),
-            "fail": d.get("fail"),
-            "node_outputs": d.get("node_outputs"),
+            "fail": fail,
+            "node_outputs": node_outputs,
+            "node_status": node_status,
         }
 
 
@@ -105,7 +137,7 @@ class WorkflowEngine:
 
     # ---- início -------------------------------------------------------
     def start(self, template: dict, inputs: dict, occurrence_id: str | None = None,
-              origin: str = "user") -> str:
+              origin: str = "user", client_id: str | None = None) -> str:
         # valida os inputs contra o schema de tipos derivado do template; um
         # pedido sem os valores esperados sobe InputError e NÃO cria ocorrência.
         validate_inputs(template, inputs or {}, self.params_for)
@@ -114,8 +146,9 @@ class WorkflowEngine:
             # origin="user": ocorrência de topo (humana, via painel/web) — aparece
             # no painel. origin="internal": criada pelo núcleo p/ tratativa (ex.: o
             # workflow interpretador do VAI) — NÃO aparece no painel.
+            # client_id: qual chave de cliente a criou (p/ a web listar as suas).
             "_id": occ_id, "template": template, "status": STATUS_RUNNING,
-            "origin": origin,
+            "origin": origin, "client_id": client_id, "created_at": time.time(),
             "inputs": inputs, "node_outputs": {}, "result": None, "fail": None,
             "frames": {}, "inflight": {}, "next_fid": 0, "root_fid": None,
         }
@@ -297,6 +330,8 @@ class WorkflowEngine:
         fid = info["fid"]
         # 1) catch no próprio nó da ação que falhou
         node = node_at(occ["template"], info["nid_path"])
+        payload = dict(payload or {})
+        payload.setdefault("_node", node.get("nome"))  # nó de origem da falha (p/ o painel)
         if self._catch_disp(node, payload) == "ignorar":
             frame = self._frame(occ, fid)
             frame["cursor"] += 1  # engole: segue a sequência com o prev inalterado

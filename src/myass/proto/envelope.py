@@ -32,6 +32,9 @@ START_OCCURRENCE = "START_OCCURRENCE"
 LIST_OCCURRENCES = "LIST_OCCURRENCES"
 OCCURRENCE_GET = "OCCURRENCE_GET"
 ENVIRONMENT = "ENVIRONMENT"
+CREATE_CLIENT = "CREATE_CLIENT"     # cria chave de cliente (nome + workflows permitidos)
+UPDATE_CLIENT = "UPDATE_CLIENT"     # edita os workflows permitidos de uma chave
+LIST_CLIENTS = "LIST_CLIENTS"
 
 # Scheduler -> Executor
 HELLO_OK = "HELLO_OK"
@@ -55,6 +58,8 @@ START_ACK = "START_ACK"
 OCCURRENCES = "OCCURRENCES"
 OCCURRENCE_INFO = "OCCURRENCE_INFO"
 ENV_INFO = "ENV_INFO"
+CLIENT_ACK = "CLIENT_ACK"           # ack de create/update (devolve segredo no create)
+CLIENTS = "CLIENTS"                 # lista de chaves de cliente
 DENIED = "DENIED"                   # papel sem permissão para a operação
 
 

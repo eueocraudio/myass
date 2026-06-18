@@ -39,6 +39,8 @@ NONCE_LEN = 12
 _AAD_REQ = b"myass/edge/v1|req"
 _AAD_RESP = b"myass/edge/v1|resp"
 _AAD_CAT = b"myass/edge/v1|cat"
+_AAD_OCC = b"myass/edge/v1|occ"      # índice de ocorrências do cliente
+_AAD_OCCD = b"myass/edge/v1|occd"    # detalhe de uma ocorrência
 
 # Rótulos BLAKE2s 'person' (<= 8 bytes).
 _P_KEY_REQ = b"k-req"
@@ -47,6 +49,10 @@ _P_KEY_CAT = b"k-cat"
 _P_ADDR_REQ = b"a-req"
 _P_ADDR_RESP = b"a-resp"
 _P_ADDR_CAT = b"a-cat"
+_P_KEY_OCC = b"k-occ"
+_P_ADDR_OCC = b"a-occ"
+_P_KEY_OCCD = b"k-occd"
+_P_ADDR_OCCD = b"a-occd"
 
 
 def _derive(secret: bytes, person: bytes) -> bytes:
@@ -124,6 +130,44 @@ def seal_catalog(cat_key: bytes, plaintext: bytes) -> bytes:
 
 def open_catalog(cat_key: bytes, blob: bytes) -> bytes:
     return open_(cat_key, blob, _AAD_CAT)
+
+
+# --- ocorrências (índice por cliente + detalhe por ocorrência) -----------
+# O núcleo (SET) publica esses blobs selados no Locutus; a web lê e decifra. O
+# detalhe tem um endereço por ``occ_id`` (não cabe no 'person' de 8 bytes), então
+# usa BLAKE2s **chaveado** por um segredo derivado, com o ``occ_id`` como dado.
+
+def occ_index_key(secret: bytes) -> bytes:
+    return _derive(secret, _P_KEY_OCC)
+
+
+def occ_index_address(secret: bytes) -> str:
+    return _derive(secret, _P_ADDR_OCC).hex()
+
+
+def occ_detail_key(secret: bytes) -> bytes:
+    return _derive(secret, _P_KEY_OCCD)
+
+
+def occ_detail_address(secret: bytes, occ_id: str) -> str:
+    base = _derive(secret, _P_ADDR_OCCD)
+    return hashlib.blake2s(occ_id.encode("utf-8"), key=base, digest_size=32).hexdigest()
+
+
+def seal_occ_index(key: bytes, plaintext: bytes) -> bytes:
+    return seal(key, plaintext, _AAD_OCC)
+
+
+def open_occ_index(key: bytes, blob: bytes) -> bytes:
+    return open_(key, blob, _AAD_OCC)
+
+
+def seal_occ_detail(key: bytes, plaintext: bytes) -> bytes:
+    return seal(key, plaintext, _AAD_OCCD)
+
+
+def open_occ_detail(key: bytes, blob: bytes) -> bytes:
+    return open_(key, blob, _AAD_OCCD)
 
 
 def new_secret() -> bytes:

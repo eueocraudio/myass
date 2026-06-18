@@ -37,14 +37,16 @@ class Gateway:
         self.on_request = on_request
 
     # ---- GET: puxa pedidos do Locutus ----------------------------------
-    def poll(self) -> int:
+    def poll(self, wait: int = 0) -> int:
         """Uma varredura: processa pedidos novos de todos os clientes. Retorna
-        quantos foram entregues à Rainha. Não bloqueia (deve ser chamado num laço
-        com intervalo, como o reap do Scheduler)."""
+        quantos foram entregues à Rainha. Com ``wait>0`` faz **long-poll** no GET
+        (segura a conexão até chegar pedido ou N s) — corta a taxa de conexões ao
+        Locutus (evita o ban por conexões/hora). Com vários clientes o long-poll
+        serializa por cliente (ok na escala atual)."""
         delivered = 0
         for client_id, secret in self.registry.items():
             addr = crypto.request_address(secret)
-            blob = self.store.get(addr)
+            blob = self.store.get(addr, wait=wait)
             if blob is None:
                 continue
 
@@ -91,4 +93,9 @@ class Gateway:
             ensure_ascii=False,
         ).encode("utf-8")
         blob = crypto.seal_response(crypto.response_key(secret), plaintext)
-        self.store.put(crypto.response_address(secret), blob)
+        # delete+put: o slot é write-once, então uma resposta ANTERIOR ainda não
+        # consumida bloquearia a nova (put viraria no-op). Sobrescreve sempre — a
+        # mais recente vence; o cliente faz polling pelo seu request_id e apaga ao ler.
+        addr = crypto.response_address(secret)
+        self.store.delete(addr)
+        self.store.put(addr, blob)
