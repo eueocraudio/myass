@@ -69,6 +69,7 @@ Coberto por `tests/test_{classes,ring,broker,scheduler,errlog,edge_crypto,edge_g
 - `doc/diagrama-fluxo.svg` / `.png` — diagrama de execução/fluxo.
 - `doc/myass-apresentacao.pdf` / `.html` — apresentação do projeto para amigos.
 - `doc/analise-tanenbaum.md`, `doc/analise-monero.md`, `doc/redesign-minimum-knowledge-core.md` — análises cruzadas teóricas e o redesign proposto (ver *Análise teórica* abaixo).
+- `doc/bot_ip_urlhaus.md` — integração do URLhaus (abuse.ch) como 3ª fonte do `bot_ip` (v0.3) + runbook de produção: publicar nova versão (stage/chave do drone/publish/autorizar chave web) e desativar uma versão (revogar no registro + allow-list).
 
 ## O que é o projeto
 
