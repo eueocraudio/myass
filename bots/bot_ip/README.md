@@ -1,11 +1,13 @@
 # bot_ip
 
 Recebe um **texto**, extrai os **IPs de WAN** (IPv4 públicos; descarta
-privados/reservados/loopback/CGNAT), e para cada IP consulta o **Shodan**
-(exposição: portas, serviços, hostnames, vulns) e o **AbuseIPDB** (reputação:
-abuse confidence score, reports, tipo de uso). No fim, consolida tudo num
-**relatório PDF** (1 IP por página, ordenado por abuse score → exposição) e o
-**publica** num serviço de upload (se configurado).
+privados/reservados/loopback/CGNAT), e para cada IP consulta três fontes: o
+**Shodan** (exposição: portas, serviços, hostnames, vulns), o **AbuseIPDB**
+(reputação: abuse confidence score, reports, tipo de uso) e o **URLhaus** da
+abuse.ch (distribuição de malware: URLs maliciosas servidas pelo IP, famílias e
+tags). No fim, consolida tudo num **relatório PDF** (1 IP por página, ordenado
+por abuse score → malware servido → exposição) e o **publica** num serviço de
+upload (se configurado).
 
 ## Workflow (estrutograma)
 
@@ -14,6 +16,7 @@ abuse confidence score, reports, tipo de uso). No fim, consolida tudo num
 02_dividir  (loop, foreach ip)
     02_01_shodan     (shodan-host)       ip   → {ip, shodan:{ports,vulns,...}}
     02_02_abuseipdb  (abuse-check)       $prev→ {..., abuseipdb:{abuse_score,...}}
+    02_03_urlhaus    (urlhaus-host)      $prev→ {..., urlhaus:{url_count,tags,...}}
 03_report  (report-pdf)                  [ips] → PDF (inline b64)
 04_publish (publish)                     sobe o PDF → URL (só se configurado)
 ```
@@ -23,6 +26,7 @@ abuse confidence score, reports, tipo de uso). No fim, consolida tudo num
 ```
 SHODAN_API_KEY=...                 # obrigatória p/ o passo Shodan
 ABUSEIPDB_API_KEY=...              # obrigatória p/ o passo AbuseIPDB
+URLHAUS_API_KEY=...                # obrigatória p/ o passo URLhaus (abuse.ch / auth.abuse.ch)
 # upload (opcional — sem isto, 04_publish PULA sem falhar; o PDF fica inline):
 MYASS_UPLOAD_URL=...               # destino (PUT na URL EXATA = ideal p/ S3 presigned)
 MYASS_UPLOAD_AUTH=Bearer ...       # token / Authorization
@@ -60,6 +64,7 @@ allow-list de uma chave de cliente (Admin → Chaves), que republica o catálogo
 mkdir -p /tmp/x && echo '{"occurrence_id":"t","params":{"ip":"8.8.8.8"}}' > /tmp/x/input.json
 echo '{"workdir":"/tmp/x"}' | SHODAN_API_KEY=... python3 scripts/task02_shodan.py
 echo '{"workdir":"/tmp/x"}' | ABUSEIPDB_API_KEY=... python3 scripts/task03_abuseipdb.py
+echo '{"workdir":"/tmp/x"}' | URLHAUS_API_KEY=... python3 scripts/task03b_urlhaus.py
 ```
 
 > Validado de ponta a ponta no quadrante real (ex.: `185.220.101.1` → AbuseIPDB

@@ -46,6 +46,13 @@ SCRIPTS = {
         "params": {"ip": {"tipo": "str", "obrigatorio": True}},
         "retorno": {"abuseipdb": {"tipo": "dict"}},
     },
+    "urlhaus-host": {
+        "entrypoint": "scripts/task03b_urlhaus.py",
+        "exigencia": {"mem_mb": 512, "cpu_cores": 1},
+        "capacidades": ["api:urlhaus"], "apis": ["https://urlhaus-api.abuse.ch"],
+        "params": {"ip": {"tipo": "str", "obrigatorio": True}},
+        "retorno": {"urlhaus": {"tipo": "dict"}},
+    },
     "report-pdf": {
         "entrypoint": "scripts/task04_report.py",
         "exigencia": {"mem_mb": 512, "cpu_cores": 1},
@@ -91,9 +98,9 @@ def build_manifest() -> dict:
     return {
         "manifest_version": 1,
         "nome": "bot_ip",
-        "versao": "0.2",
-        "descricao": "Extrai IPs de WAN de um texto, enriquece (Shodan + AbuseIPDB) "
-                     "e publica um relatório PDF num serviço de upload.",
+        "versao": "0.3",
+        "descricao": "Extrai IPs de WAN de um texto, enriquece (Shodan + AbuseIPDB + "
+                     "URLhaus) e publica um relatório PDF num serviço de upload.",
         "requirements": {},  # tudo stdlib
         "scripts": scripts,
     }
@@ -134,12 +141,14 @@ def build_workflow(proj: str) -> dict:
              "bot_ref": script_ref(proj, "shodan-host"), "params": {"ip": "$item"}},
             {"tipo": "action", "nome": "02_02_abuseipdb",
              "bot_ref": script_ref(proj, "abuse-check"), "params": "$prev"},
+            {"tipo": "action", "nome": "02_03_urlhaus",
+             "bot_ref": script_ref(proj, "urlhaus-host"), "params": "$prev"},
         ],
     }
     return {
         "template_version": 1,
         "nome": "bot_ip",
-        "versao": "0.2",
+        "versao": "0.3",
         "tipo": "workflow",
         "raiz": {
             "tipo": "block",

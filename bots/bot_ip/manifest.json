@@ -1,5 +1,5 @@
 {
-  "descricao": "Extrai IPs de WAN de um texto, enriquece (Shodan + AbuseIPDB) e publica um relatório PDF num serviço de upload.",
+  "descricao": "Extrai IPs de WAN de um texto, enriquece (Shodan + AbuseIPDB + URLhaus) e publica um relatório PDF num serviço de upload.",
   "manifest_version": 1,
   "nome": "bot_ip",
   "requirements": {},
@@ -76,7 +76,7 @@
           "tipo": "int"
         }
       },
-      "script_hash": "blake2:0d58580efdd9c11b92bc4dba7b34a56217ea6e74e6c6f7cef6318edd25259eb7252d2ea38fd14582c6f8fd5047c1878065def8b7859d88cbdc404117db78790e"
+      "script_hash": "blake2:eab61ff708e5c39c05587a332099c07fd6de5674ba55d33ff3441d1125ed6dd88cdad605edff6ce47bb497950a60a01f34592e86082c5d2ddbb655ff7751aa7b"
     },
     "shodan-host": {
       "apis": [
@@ -126,7 +126,32 @@
         }
       },
       "script_hash": "blake2:cef5f5993a12a9c468c6f2a35ffd262ecf08ed8c50c47c308c1018c7c13247ff1214d612b4ee31c04d1d3f69b256d4cfc0e61a13dc137e47350236ee577c6bde"
+    },
+    "urlhaus-host": {
+      "apis": [
+        "https://urlhaus-api.abuse.ch"
+      ],
+      "capacidades": [
+        "api:urlhaus"
+      ],
+      "entrypoint": "scripts/task03b_urlhaus.py",
+      "exigencia": {
+        "cpu_cores": 1,
+        "mem_mb": 512
+      },
+      "params": {
+        "ip": {
+          "obrigatorio": true,
+          "tipo": "str"
+        }
+      },
+      "retorno": {
+        "urlhaus": {
+          "tipo": "dict"
+        }
+      },
+      "script_hash": "blake2:bb812629711575a3028c68e5e7a30b5885e5a39d305ea8fe21457f01680b9c09a0a9b2abb0b05ad6f8d6fcb978549f3b5fcc80af00831e780c830b4364e0c1b2"
     }
   },
-  "versao": "0.2"
+  "versao": "0.3"
 }

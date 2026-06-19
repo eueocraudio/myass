@@ -8,6 +8,7 @@ Sem dependências externas.
 
 import json
 import os
+import urllib.parse
 import urllib.request
 
 _UA = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
@@ -37,6 +38,20 @@ def get_text(url, timeout=DEFAULT_TIMEOUT, headers=None):
 
 def get_json(url, timeout=DEFAULT_TIMEOUT, headers=None):
     return json.loads(get_text(url, timeout, headers))
+
+
+def post_form_json(url, fields, headers=None, timeout=DEFAULT_TIMEOUT):
+    """POST ``application/x-www-form-urlencoded`` -> JSON decodificado.
+
+    Padrão das APIs de lookup do URLhaus (corpo ``host=<ip>`` + header
+    ``Auth-Key``)."""
+    body = urllib.parse.urlencode(fields).encode("ascii")
+    h = {"User-Agent": _UA, "Content-Type": "application/x-www-form-urlencoded"}
+    if headers:
+        h.update(headers)
+    req = urllib.request.Request(url, data=body, headers=h, method="POST")
+    with _opener().open(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
 def put_bytes(url, data, headers=None, timeout=DEFAULT_TIMEOUT):

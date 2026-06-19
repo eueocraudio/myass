@@ -28,8 +28,15 @@ def _exposure(d):
     return (len(sh.get("vulns") or []), len(sh.get("ports") or []))
 
 
+def _malware(d):
+    c = (d.get("urlhaus") or {}).get("url_count")
+    return c if isinstance(c, (int, float)) else 0
+
+
 def _ordena(d):
-    return (_abuse(d),) + _exposure(d)
+    # reputação (abuse) e malware servido (URLhaus) são os sinais fortes; em
+    # empate, a exposição do Shodan (vulns, portas).
+    return (_abuse(d), _malware(d)) + _exposure(d)
 
 
 def _risco(score):
@@ -43,7 +50,8 @@ def main(params, occ):
     rel = sorted(params.get("ips") or [], key=_ordena, reverse=True)
     gerado = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    pdf = Pdf(title="IP intelligence report", footer="myass — relatório de IPs (Shodan + AbuseIPDB)")
+    pdf = Pdf(title="IP intelligence report",
+              footer="myass — relatório de IPs (Shodan + AbuseIPDB + URLhaus)")
     pdf.title("IP intelligence report")
     pdf.small(f"Gerado em {gerado}   ·   Total de IPs: {len(rel)}")
 
@@ -52,29 +60,34 @@ def main(params, occ):
     for d in rel:
         sh = d.get("shodan") or {}
         ab = d.get("abuseipdb") or {}
+        uh = d.get("urlhaus") or {}
         rows.append([d.get("ip", "?"), str(ab.get("abuse_score", "?")), _risco(_abuse(d)),
-                     (sh.get("org") or ab.get("isp") or "?")[:30],
-                     str(len(sh.get("ports") or [])), str(len(sh.get("vulns") or []))])
+                     (sh.get("org") or ab.get("isp") or "?")[:26],
+                     str(len(sh.get("ports") or [])), str(len(sh.get("vulns") or [])),
+                     str(uh.get("url_count")) if uh else "—"])
     if rows:
-        pdf.table(["IP", "Abuse", "Risco", "Org/ISP", "Portas", "Vulns"], rows,
-                  [0.24, 0.12, 0.12, 0.28, 0.12, 0.12])
+        pdf.table(["IP", "Abuse", "Risco", "Org/ISP", "Portas", "Vulns", "Malware"], rows,
+                  [0.22, 0.11, 0.11, 0.25, 0.10, 0.10, 0.11])
     else:
         pdf.paragraph("Nenhum IP de WAN encontrado no texto.")
 
     pdf.heading("Methodology")
     pdf.paragraph(
-        "Cada IP público extraído do texto foi consultado em duas fontes: o "
+        "Cada IP público extraído do texto foi consultado em três fontes: o "
         "Shodan (exposição na internet — portas, serviços, hostnames e vulns "
-        "conhecidas) e o AbuseIPDB (reputação — abuse confidence score, total de "
-        "reports e tipo de uso). IPs privados, reservados e de loopback são "
-        "descartados na extração. A ordenação prioriza os IPs com maior abuse "
-        "score e, em empate, os mais expostos.")
+        "conhecidas), o AbuseIPDB (reputação — abuse confidence score, total de "
+        "reports e tipo de uso) e o URLhaus da abuse.ch (distribuição de malware "
+        "— URLs maliciosas servidas a partir do IP, famílias e tags). IPs "
+        "privados, reservados e de loopback são descartados na extração. A "
+        "ordenação prioriza os IPs com maior abuse score e mais malware servido "
+        "(URLhaus) e, em empate, os mais expostos.")
 
     for d in rel:
         pdf.page_break()
         ip = d.get("ip", "?")
         ab = d.get("abuseipdb") or {}
         sh = d.get("shodan") or {}
+        uh = d.get("urlhaus") or {}
         sc = ab.get("abuse_score")
         pdf.banner(f"{ip}" + (f"   ·   abuse {sc} ({_risco(sc)})" if sc is not None else ""))
 
@@ -112,6 +125,24 @@ def main(params, occ):
                     pdf.bullet(str(v))
         else:
             pdf.small(d.get("shodan_nota") or "sem dados do Shodan")
+
+        pdf.heading("Malware distribution — URLhaus", 12)
+        if uh:
+            pdf.table(["Campo", "Valor"], [
+                ["URLs maliciosas", f"{uh.get('url_count')} ({uh.get('urls_online')} online)"],
+                ["Primeira vez visto", str(uh.get("firstseen") or "?")],
+                ["Ameaças", ", ".join(uh.get("threats") or []) or "—"],
+                ["Tags / famílias", ", ".join(uh.get("tags") or []) or "—"],
+                ["Spamhaus DBL / SURBL",
+                 f"{uh.get('spamhaus_dbl') or '?'} / {uh.get('surbl') or '?'}"],
+            ], [0.32, 0.68])
+            amostras = uh.get("amostras_urls") or []
+            if amostras:
+                pdf.heading("Sample malware URLs (URLhaus)", 12)
+                for u in amostras:
+                    pdf.bullet(str(u))
+        else:
+            pdf.small(d.get("urlhaus_erro") or d.get("urlhaus_nota") or "sem dados do URLhaus")
 
     b64 = base64.b64encode(pdf.render()).decode("ascii")
     return {"pdf": {"$b64": b64, "nome": "relatorio_ips.pdf"}, "total": len(rel),
